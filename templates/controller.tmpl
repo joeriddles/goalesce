@@ -1,0 +1,15 @@
+package controller
+
+type {{.Name}}Controller interface {
+}
+
+type _{{.Name}}Controller struct {
+}
+
+func New{{.Name}}Controller() {{.Name}}Controller {
+  return &_{{.Name}}Controller{}
+}
+
+func (c *_{{.Name}}Controller) Get{{.Name}}(id int) (*{{.Name}}, error) {
+  return nil, err
+}

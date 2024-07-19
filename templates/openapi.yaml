@@ -1,0 +1,7 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Generated API
+paths:
+  {{range .}}/{{.Name|ToLower}}:
+    $ref: './{{.Name|ToLower}}.gen.yaml'{{end}}

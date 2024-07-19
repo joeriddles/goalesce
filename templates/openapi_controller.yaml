@@ -1,0 +1,169 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: "{{.Name}} API"
+tags:
+  - name: "{{.Name|ToLower}}"
+paths:
+  /:
+    get:
+      tags:
+        - "{{.Name|ToLower}}"
+      summary: Get all {{.Name|ToLower}}s
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/{{.Name}}'
+    post:
+      tags:
+        - "{{.Name|ToLower}}"
+      summary: Create a new {{.Name|ToLower}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Create{{.Name}}'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+               $ref: '#/components/schemas/{{.Name}}'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /{id}/:
+    get:
+      tags:
+        - "{{.Name|ToLower}}"
+      summary: Get a {{.Name|ToLower}} by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/id"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/{{.Name}}'
+        "404":
+          $ref: "#/components/responses/NotFound"
+    put:
+      tags:
+        - "{{.Name|ToLower}}"
+      summary: Update a {{.Name|ToLower}} by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Update{{.Name}}"
+      responses:
+        "204":
+          description: Updated
+        "404":
+          $ref: "#/components/responses/NotFound"
+    delete:
+      tags:
+        - "{{.Name|ToLower}}"
+      summary: Delete a {{.Name|ToLower}} by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/id"
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    {{.Name}}:
+      type: object
+    Create{{.Name}}:
+      type: object
+    Update{{.Name}}:
+      type: object
+    id:
+      type: integer
+      format: int64
+      description: A unique id to represent a resource
+      minimum: 0
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          description: The error code's unique identifier
+        message:
+          type: string
+          description: The error code's detailed message providing information about itself
+      required:
+        - code
+        - message
+  parameters:
+    IdPath:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/id"
+  responses:
+    # 400
+    BadRequest:
+      description: "Bad request - Contents of the request are unexpected"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    # 401
+    Unauthorized:
+      description: "Unauthorized - Invalid app check token, bearer token, or scope"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    # 403
+    Forbidden:
+      description: "Forbidden - No permission to access the resource"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    # 404
+    NotFound:
+      description: "Not Found - Specified resource could not be located"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    # 409
+    Conflict:
+      description: "Conflict - Operation would result in resource conflicts"
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
