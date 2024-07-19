@@ -7,11 +7,11 @@ import (
 )
 
 func Test_Basic(t *testing.T) {
-	err := CodeGen("./examples/basic")
+	err := run("./examples/basic")
 	require.NoError(t, err)
 }
 
 func Test_Cars(t *testing.T) {
-	err := CodeGen("./examples/cars")
+	err := run("./examples/cars")
 	require.NoError(t, err)
 }
