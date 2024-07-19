@@ -11,9 +11,13 @@ import (
 	"go/token"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"text/template"
+
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 )
 
 // Embed the templates directory
@@ -67,14 +71,18 @@ func CodeGen(folderPath string) error {
 	return err
 }
 
-// Generate controllers from GORM model metadata
+// Generate from GORM model metadata
 func generate(metadatas []*GormModelMetadata) error {
 	t := template.New("gorm_oapi_codegen")
 	if err := LoadTemplates(templates, t); err != nil {
 		return err
 	}
 
-	if err := os.Mkdir("generated", os.ModePerm); err != nil {
+	if err := os.RemoveAll("./generated"); err != nil {
+		return err
+	}
+
+	if err := os.Mkdir("./generated", os.ModePerm); err != nil {
 		if err.Error() != "mkdir generated: file exists" {
 			return err
 		}
@@ -90,7 +98,79 @@ func generate(metadatas []*GormModelMetadata) error {
 		return err
 	}
 
+	if err := combineOpenApiFiles(); err != nil {
+		return err
+	}
+
+	swagger, err := util.LoadSwagger("./generated/openapi.yaml")
+	if err != nil {
+		return err
+	}
+
+	code, err := codegen.Generate(swagger, codegen.Configuration{
+		PackageName: "api",
+		Generate:    codegen.GenerateOptions{Models: true},
+	})
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile("./generated/types.gen.go", []byte(code), 0o644); err != nil {
+		return err
+	}
+
+	code, err = codegen.Generate(swagger, codegen.Configuration{
+		PackageName: "api",
+		Generate:    codegen.GenerateOptions{StdHTTPServer: true},
+	})
+
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile("./generated/server.gen.go", []byte(code), 0o644); err != nil {
+		return err
+	}
+
 	return nil
+}
+
+func combineOpenApiFiles() error {
+	f, err := os.Create("./generated/openapi.yaml")
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err = runNpxCommand(
+		"@redocly/openapi-cli@latest",
+		"bundle",
+		"./generated/openapi_base.gen.yaml",
+		"-o",
+		"./generated/openapi.yaml",
+	); err != nil {
+		return err
+	}
+
+	entries, err := os.ReadDir("./generated")
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		filename := entry.Name()
+		if strings.HasSuffix(filename, ".yaml") && filename != "openapi.yaml" {
+			if err := os.Remove(fmt.Sprintf("./generated/%v", filename)); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+
+}
+
+func runNpxCommand(command string, args ...string) (string, error) {
+	cmd := exec.Command("npx", append([]string{command}, args...)...)
+	output, err := cmd.CombinedOutput()
+	return string(output), err
 }
 
 func generateOpenApiBase(t *template.Template, metadatas []*GormModelMetadata) error {
@@ -121,26 +201,12 @@ func generateOpenApiRoutes(t *template.Template, metadata *GormModelMetadata) er
 	return nil
 }
 
-// TODO(joeriddles): remove this since we're just generating .yaml
-func generateController(t *template.Template, metadata *GormModelMetadata) error {
-	f, err := os.Create(fmt.Sprintf("generated/%v.gen.go", strings.ToLower(metadata.Name)))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "controller.tmpl", &metadata)
-	w.Flush()
-
-	return nil
-}
-
 // LoadTemplates loads all of our template files into a text/template. The
 // path of template is relative to the templates directory.
 func LoadTemplates(src embed.FS, t *template.Template) error {
 	funcMap := template.FuncMap{
-		"ToLower": strings.ToLower,
+		"ToLower":       strings.ToLower,
+		"ToOpenApiType": toOpenApiType,
 	}
 
 	return fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {
@@ -269,4 +335,15 @@ func checkIsGormModel(node *ast.TypeSpec) bool {
 	})
 
 	return isGorm
+}
+
+func toOpenApiType(t string) string {
+	switch t {
+	case "string":
+		return "string"
+	case "uint":
+		return "integer"
+	default:
+		return "object"
+	}
 }

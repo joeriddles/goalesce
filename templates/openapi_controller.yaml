@@ -102,7 +102,7 @@ components:
         id:
           $ref: "#/components/schemas/id"{{range .Fields}}
         {{.Name|ToLower}}:
-          type: {{.Type}}{{end}}
+          type: {{.Type|ToOpenApiType}}{{end}}
       required:
         - id
         {{range .Fields}}- {{.Name|ToLower}}
