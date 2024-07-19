@@ -94,14 +94,14 @@ func generate(metadatas []*GormModelMetadata) error {
 }
 
 func generateOpenApiBase(t *template.Template, metadatas []*GormModelMetadata) error {
-	f, err := os.Create("generated/openapi.yaml")
+	f, err := os.Create("generated/openapi_base.gen.yaml")
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "openapi.yaml", metadatas)
+	t.ExecuteTemplate(w, "openapi_base.yaml", metadatas)
 	w.Flush()
 
 	return nil
