@@ -26,7 +26,7 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	if err := os.Mkdir("./generated", os.ModePerm); err != nil {
+	if err := os.MkdirAll("./generated/controller", os.ModePerm); err != nil {
 		if err.Error() != "mkdir generated: file exists" {
 			return err
 		}
@@ -75,6 +75,12 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 	}
 	if err = os.WriteFile("./generated/server.gen.go", []byte(code), 0o644); err != nil {
 		return err
+	}
+
+	for _, metadata := range metadatas {
+		if err := generateController(t, metadata); err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -137,6 +143,20 @@ func generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetad
 
 	w := bufio.NewWriter(f)
 	t.ExecuteTemplate(w, "openapi_controller.yaml", &metadata)
+	w.Flush()
+
+	return nil
+}
+
+func generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
+	f, err := os.Create(fmt.Sprintf("generated/controller/%v.gen.go", strings.ToLower(metadata.Name)))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	t.ExecuteTemplate(w, "controller.tmpl", &metadata)
 	w.Flush()
 
 	return nil
