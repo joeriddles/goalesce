@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "debug cars",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": ".",
+      "args": [
+        "examples/cars",
+      ],
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package parse
 
 import (
 	"errors"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -64,6 +65,12 @@ func parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
 			var fType string
 			if typeId, ok := f.Type.(*ast.Ident); ok {
 				fType = typeId.Name
+			} else if typeExpr, ok := f.Type.(*ast.ArrayType); ok {
+				var elementType string
+				if exprTypeId, ok := typeExpr.Elt.(*ast.Ident); ok {
+					elementType = exprTypeId.Name
+				}
+				fType = fmt.Sprintf("[]%v", elementType)
 			}
 
 			var fTag *string
