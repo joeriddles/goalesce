@@ -26,10 +26,13 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	if err := os.MkdirAll("./generated/controller", os.ModePerm); err != nil {
-		if err.Error() != "mkdir generated: file exists" {
-			return err
-		}
+	if err := createDirs(
+		"./generated",
+		"./generated/controller",
+		"./generated/mapper",
+		"./generated/repository",
+	); err != nil {
+		return err
 	}
 
 	for _, metadata := range metadatas {
@@ -79,6 +82,12 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 
 	for _, metadata := range metadatas {
 		if err := generateController(t, metadata); err != nil {
+			return err
+		}
+		if err := generateRepository(t, metadata); err != nil {
+			return err
+		}
+		if err := generateMapper(t, metadata); err != nil {
 			return err
 		}
 	}
@@ -149,7 +158,7 @@ func generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetad
 }
 
 func generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
-	f, err := os.Create(fmt.Sprintf("generated/controller/%v.gen.go", strings.ToLower(metadata.Name)))
+	f, err := os.Create(fmt.Sprintf("generated/controller/%v_controller.gen.go", strings.ToLower(metadata.Name)))
 	if err != nil {
 		return err
 	}
@@ -157,6 +166,34 @@ func generateController(t *template.Template, metadata *entity.GormModelMetadata
 
 	w := bufio.NewWriter(f)
 	t.ExecuteTemplate(w, "controller.tmpl", &metadata)
+	w.Flush()
+
+	return nil
+}
+
+func generateRepository(t *template.Template, metadata *entity.GormModelMetadata) error {
+	f, err := os.Create(fmt.Sprintf("generated/repository/%v_repository.gen.go", strings.ToLower(metadata.Name)))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	t.ExecuteTemplate(w, "repository.tmpl", &metadata)
+	w.Flush()
+
+	return nil
+}
+
+func generateMapper(t *template.Template, metadata *entity.GormModelMetadata) error {
+	f, err := os.Create(fmt.Sprintf("generated/mapper/%v_mapper.gen.go", strings.ToLower(metadata.Name)))
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	w := bufio.NewWriter(f)
+	t.ExecuteTemplate(w, "mapper.tmpl", &metadata)
 	w.Flush()
 
 	return nil
@@ -208,4 +245,15 @@ func toOpenApiType(t string) string {
 	default:
 		return "object"
 	}
+}
+
+func createDirs(paths ...string) error {
+	for _, path := range paths {
+		if err := os.Mkdir(path, os.ModePerm); err != nil {
+			if err.Error() != "mkdir generated: file exists" {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -52,9 +52,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/{{.Name}}'
+                $ref: '#/components/schemas/{{.Name}}'
         "404":
           $ref: "#/components/responses/NotFound"
     put:
@@ -109,8 +107,19 @@ components:
         {{end}}
     Create{{.Name}}:
       type: object
+      properties:
+        {{range .Fields}}{{.Name|ToLower}}:
+          type: {{.Type|ToOpenApiType}}
+        {{end}}
+      required:
+        {{range .Fields}}- {{.Name|ToLower}}
+        {{end}}
     Update{{.Name}}:
       type: object
+      properties:
+        {{range .Fields}}{{.Name|ToLower}}:
+          type: {{.Type|ToOpenApiType}}
+        {{end}}
     id:
       type: integer
       format: int64
