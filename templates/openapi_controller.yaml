@@ -3,8 +3,8 @@ paths:
   /:
     get:
       tags:
-        - "{{.Name|ToLower}}"
-      summary: Get all {{.Name|ToLower}}s
+        - "{{.Name|ToSnakeCase}}"
+      summary: Get all {{.Name}}s
       responses:
         "200":
           description: Success
@@ -16,8 +16,8 @@ paths:
                   $ref: '#/components/schemas/{{.Name}}'
     post:
       tags:
-        - "{{.Name|ToLower}}"
-      summary: Create a new {{.Name|ToLower}}
+        - "{{.Name|ToSnakeCase}}"
+      summary: Create a new {{.Name}}
       requestBody:
         required: true
         content:
@@ -38,8 +38,8 @@ paths:
   /{id}/:
     get:
       tags:
-        - "{{.Name|ToLower}}"
-      summary: Get a {{.Name|ToLower}} by ID
+        - "{{.Name|ToSnakeCase}}"
+      summary: Get a {{.Name}} by ID
       parameters:
         - name: id
           in: path
@@ -57,8 +57,8 @@ paths:
           $ref: "#/components/responses/NotFound"
     put:
       tags:
-        - "{{.Name|ToLower}}"
-      summary: Update a {{.Name|ToLower}} by ID
+        - "{{.Name|ToSnakeCase}}"
+      summary: Update a {{.Name}} by ID
       parameters:
         - name: id
           in: path
@@ -78,8 +78,8 @@ paths:
           $ref: "#/components/responses/NotFound"
     delete:
       tags:
-        - "{{.Name|ToLower}}"
-      summary: Delete a {{.Name|ToLower}} by ID
+        - "{{.Name|ToSnakeCase}}"
+      summary: Delete a {{.Name}} by ID
       parameters:
         - name: id
           in: path
@@ -99,26 +99,35 @@ components:
       properties:
         id:
           $ref: "#/components/schemas/id"{{range .Fields}}
-        {{.Name|ToLower}}:
-          type: {{.Type|ToOpenApiType}}{{end}}
+        {{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+          {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if ne .Items nil}}
+          items:
+            {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
+          {{end}}{{end}}{{end}}
       required:
         - id
-        {{range .Fields}}- {{.Name|ToLower}}
+        {{range .Fields}}- {{.Name|ToSnakeCase}}
         {{end}}
     Create{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToLower}}:
-          type: {{.Type|ToOpenApiType}}
+        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+          {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if ne .Items nil}}
+          items:
+            {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
+          {{end}}{{end}}
         {{end}}
       required:
-        {{range .Fields}}- {{.Name|ToLower}}
+        {{range .Fields}}- {{.Name|ToSnakeCase}}
         {{end}}
     Update{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToLower}}:
-          type: {{.Type|ToOpenApiType}}
+        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+          {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if ne .Items nil}}
+          items:
+            {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
+          {{end}}{{end}}
         {{end}}
     id:
       type: integer

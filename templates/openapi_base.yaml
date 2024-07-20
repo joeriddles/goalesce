@@ -4,8 +4,8 @@ info:
   version: 1.0.0
   title: Generated API
 paths:
-  {{range .}}/{{.Name|ToLower}}:
-    $ref: './{{.Name|ToLower}}.gen.yaml#/paths/~1'
-  /{{.Name|ToLower}}/{id}/:
-    $ref: './{{.Name|ToLower}}.gen.yaml#/paths/~1%7Bid%7D~1'
+  {{range .}}/{{.Name|ToSnakeCase}}:
+    $ref: './{{.Name|ToSnakeCase}}.gen.yaml#/paths/~1'
+  /{{.Name|ToSnakeCase}}/{id}/:
+    $ref: './{{.Name|ToSnakeCase}}.gen.yaml#/paths/~1%7Bid%7D~1'
   {{end}}

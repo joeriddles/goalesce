@@ -30,14 +30,14 @@ func New{{.Name}}Controller() {{.Name}}Controller {
 }
 
 func (c *_{{.Name}}Controller) Get{{.Name}}(ctx context.Context, request api.Get{{.Name}}RequestObject) (api.Get{{.Name}}ResponseObject, error) {
-  {{.Name|ToLower}}s, err := c.repository.List(ctx, map[string]interface{}{})
+  {{.Name|ToCamelCase}}s, err := c.repository.List(ctx, map[string]interface{}{})
   if err != nil {
     return nil, err
   }
 
   result := []api.{{.Name}}{}
-  for _, {{.Name|ToLower}} := range {{.Name|ToLower}}s {
-    api{{.Name}}, err := c.mapper.MapToApi(*{{.Name|ToLower}})
+  for _, {{.Name|ToCamelCase}} := range {{.Name|ToCamelCase}}s {
+    api{{.Name}}, err := c.mapper.MapToApi(*{{.Name|ToCamelCase}})
     if err != nil {
       return nil, err
     }

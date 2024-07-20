@@ -20,7 +20,7 @@ type {{.Name}}Repository interface {
   
   Create(
     ctx context.Context,
-    {{.Name|ToLower}} model.{{.Name}},
+    {{.Name|ToCamelCase}} model.{{.Name}},
   ) error
   
   Update(
@@ -57,7 +57,7 @@ func (r *_{{.Name}}Repository) Get(
 
 func (r *_{{.Name}}Repository) Create(
   ctx context.Context,
-  {{.Name|ToLower}} model.{{.Name}},
+  {{.Name|ToCamelCase}} model.{{.Name}},
 ) error {
   return nil
 }

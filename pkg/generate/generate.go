@@ -11,8 +11,10 @@ import (
 	"strings"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
+	"github.com/joeriddles/gorm-oapi-codegen/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
+	"golang.org/x/tools/imports"
 )
 
 // Generate from GORM model metadata
@@ -36,7 +38,8 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 	}
 
 	for _, metadata := range metadatas {
-		if err := generateOpenApiRoutes(t, metadata); err != nil {
+		_, err := generateOpenApiRoutes(t, metadata)
+		if err != nil {
 			return err
 		}
 	}
@@ -102,16 +105,22 @@ func combineOpenApiFiles() error {
 	}
 	defer f.Close()
 
-	if _, err = runNpxCommand(
-		"@redocly/openapi-cli@latest",
+	args := []string{
 		"bundle",
-		"./generated/openapi_base.gen.yaml",
-		"-o",
+		"--output",
 		"./generated/openapi.yaml",
+		"./generated/openapi_base.gen.yaml",
+	}
+
+	if output, err := runNpxCommand(
+		"@redocly/openapi-cli@latest",
+		args...,
 	); err != nil {
+		os.Stderr.WriteString(output)
 		return err
 	}
 
+	// TODO(joeriddles): add --prune option to CLI
 	entries, err := os.ReadDir("./generated")
 	if err != nil {
 		return err
@@ -143,10 +152,11 @@ func generateOpenApiBase(t *template.Template, metadatas []*entity.GormModelMeta
 	return nil
 }
 
-func generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetadata) error {
-	f, err := os.Create(fmt.Sprintf("generated/%v.gen.yaml", strings.ToLower(metadata.Name)))
+func generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetadata) (string, error) {
+	filename := fmt.Sprintf("./generated/%v.gen.yaml", utils.ToSnakeCase(metadata.Name))
+	f, err := os.Create(filename)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer f.Close()
 
@@ -154,47 +164,63 @@ func generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetad
 	t.ExecuteTemplate(w, "openapi_controller.yaml", &metadata)
 	w.Flush()
 
-	return nil
+	return filename, nil
 }
 
 func generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
-	f, err := os.Create(fmt.Sprintf("generated/controller/%v_controller.gen.go", strings.ToLower(metadata.Name)))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "controller.tmpl", &metadata)
-	w.Flush()
-
-	return nil
+	filepath := fmt.Sprintf("generated/controller/%v_controller.gen.go", utils.ToSnakeCase(metadata.Name))
+	return generateGo(
+		t,
+		filepath,
+		"controller.tmpl",
+		&metadata,
+	)
 }
 
 func generateRepository(t *template.Template, metadata *entity.GormModelMetadata) error {
-	f, err := os.Create(fmt.Sprintf("generated/repository/%v_repository.gen.go", strings.ToLower(metadata.Name)))
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "repository.tmpl", &metadata)
-	w.Flush()
-
-	return nil
+	filepath := fmt.Sprintf("generated/repository/%v_repository.gen.go", utils.ToSnakeCase(metadata.Name))
+	return generateGo(
+		t,
+		filepath,
+		"repository.tmpl",
+		&metadata,
+	)
 }
 
 func generateMapper(t *template.Template, metadata *entity.GormModelMetadata) error {
-	f, err := os.Create(fmt.Sprintf("generated/mapper/%v_mapper.gen.go", strings.ToLower(metadata.Name)))
+	filepath := fmt.Sprintf("generated/mapper/%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name))
+	return generateGo(
+		t,
+		filepath,
+		"mapper.tmpl",
+		&metadata,
+	)
+}
+
+// Generate formatted Go code at the filepath with the template
+func generateGo(t *template.Template, filepath string, template string, data any) error {
+	f, err := os.Create(filepath)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "mapper.tmpl", &metadata)
+	t.ExecuteTemplate(w, template, data)
 	w.Flush()
+
+	outBytes, err := imports.Process(filepath, nil, &imports.Options{
+		FormatOnly: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	w = bufio.NewWriter(f)
+	_, err = w.Write(outBytes)
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -204,7 +230,13 @@ func generateMapper(t *template.Template, metadata *entity.GormModelMetadata) er
 func loadTemplates(src embed.FS, t *template.Template) error {
 	funcMap := template.FuncMap{
 		"ToLower":       strings.ToLower,
+		"ToCamelCase":   utils.ToCamelCase,
+		"ToSnakeCase":   utils.ToSnakeCase,
+		"ToPascalCase":  utils.ToPascalCase,
 		"ToOpenApiType": toOpenApiType,
+		"IsSimpleType":  isSimpleType,
+		"IsId":          isId,
+		"Not":           not,
 	}
 
 	return fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {
@@ -236,15 +268,67 @@ func runNpxCommand(command string, args ...string) (string, error) {
 	return string(output), err
 }
 
-func toOpenApiType(t string) string {
-	switch t {
-	case "string":
-		return "string"
-	case "uint":
-		return "integer"
-	default:
-		return "object"
+type OpenApiType struct {
+	Type  string
+	Ref   *string
+	Items *map[string]string
+}
+
+// TODO(joeriddles): Refactor this monstrosity
+func toOpenApiType(t string) *OpenApiType {
+	var result *OpenApiType
+
+	if isPointer := strings.HasPrefix(t, "*"); isPointer {
+		t = t[1:]
+	} else if isArray := strings.HasPrefix(t, "[]"); isArray {
+		elemType := toOpenApiType(t[2:])
+		items := map[string]string{}
+		if elemType.Ref != nil {
+			items["$ref"] = *elemType.Ref
+		} else {
+			items["type"] = elemType.Type
+		}
+
+		result = &OpenApiType{
+			Type:  "array",
+			Items: &items,
+		}
 	}
+
+	if result == nil {
+		switch t {
+		case "string":
+			result = &OpenApiType{Type: "string"}
+		case "int", "uint":
+			result = &OpenApiType{Type: "integer"}
+		default:
+			var typeRef *string = nil
+			if !isSimpleType(t) {
+				typeRefVal := fmt.Sprintf("./%v.gen.yaml#/components/schemas/%v", utils.ToSnakeCase(t), t)
+				typeRef = &typeRefVal
+				result = &OpenApiType{Type: t, Ref: typeRef}
+			} else {
+				result = &OpenApiType{Type: t}
+			}
+		}
+	}
+
+	return result
+}
+
+func isSimpleType(t string) bool {
+	if t == "" {
+		return false // TODO(joeriddles) should this ever be empty?
+	}
+	return t[0:1] != strings.ToUpper(t[0:1])
+}
+
+func isId(name string) bool {
+	return strings.HasSuffix(strings.ToLower(name), "id")
+}
+
+func not(v bool) bool {
+	return !v
 }
 
 func createDirs(paths ...string) error {

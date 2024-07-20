@@ -34,7 +34,7 @@ func TestParse_Cars(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 5, len(actual))
 
-	expected := &entity.GormModelMetadata{
+	expectedManufacturer := &entity.GormModelMetadata{
 		Name: "Manufacturer",
 		Fields: []*entity.GormModelField{
 			{
@@ -47,7 +47,31 @@ func TestParse_Cars(t *testing.T) {
 			},
 		},
 	}
-	assertJsonEq(t, expected, &actual[0])
+	expectedModelPartsTag := "`gorm:\"many2many:vehicle_parts;\"`"
+	expectedModel := &entity.GormModelMetadata{
+		Name: "Model",
+		Fields: []*entity.GormModelField{
+			{
+				Name: "Name",
+				Type: "string",
+			},
+			{
+				Name: "ManufacturerID",
+				Type: "uint",
+			},
+			{
+				Name: "Manufacturer",
+				Type: "*Manufacturer",
+			},
+			{
+				Name: "Parts",
+				Type: "[]*Part",
+				Tag:  &expectedModelPartsTag,
+			},
+		},
+	}
+	assertJsonEq(t, expectedManufacturer, &actual[0])
+	assertJsonEq(t, expectedModel, &actual[1])
 	// TODO(joeriddles) assert all models in cars/main.go...
 }
 

@@ -23,10 +23,8 @@ func New{{.Name}}Mapper() {{.Name}}Mapper {
 
 func (m *_{{.Name}}Mapper) MapToModel(obj api.{{.Name}}) (*model.{{.Name}}, error) {
   return &model.{{.Name}}{
-    Model: gorm.Model{
-      ID: uint(obj.Id),
-    },
-    {{range .Fields}}{{.Name}}: obj.{{.Name}},
+    Model: gorm.Model{ID: uint(obj.Id)},
+    {{range .Fields}}{{if IsSimpleType .Type}}{{.Name}}: {{if IsId .Name}}uint(obj.{{.Name|ToPascalCase}}){{else}}obj.{{.Name|ToPascalCase}}{{end}},{{end}}
     {{end}}
   }, nil
 }

@@ -61,17 +61,7 @@ func parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
 			}
 
 			fName := f.Names[0].Name // TODO(joeriddles): support multiple names
-
-			var fType string
-			if typeId, ok := f.Type.(*ast.Ident); ok {
-				fType = typeId.Name
-			} else if typeExpr, ok := f.Type.(*ast.ArrayType); ok {
-				var elementType string
-				if exprTypeId, ok := typeExpr.Elt.(*ast.Ident); ok {
-					elementType = exprTypeId.Name
-				}
-				fType = fmt.Sprintf("[]%v", elementType)
-			}
+			fType := parseType(f.Type)
 
 			var fTag *string
 			if f.Tag != nil {
@@ -88,6 +78,23 @@ func parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
 		return true
 	})
 	return fields
+}
+
+func parseType(f ast.Expr) string {
+	var fType string
+
+	switch t := f.(type) {
+	case *ast.Ident:
+		fType = t.Name
+	case *ast.StarExpr:
+		elementType := parseType(t.X)
+		fType = fmt.Sprintf("*%v", elementType)
+	case *ast.ArrayType:
+		elementType := parseType(t.Elt)
+		fType = fmt.Sprintf("[]%v", elementType)
+	}
+
+	return fType
 }
 
 // Check if the ast node is a GORM model
