@@ -4,16 +4,27 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
-	"go/parser"
+	goparser "go/parser"
 	"go/token"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 )
 
+type Parser interface {
+	Parse(filepath string) ([]*entity.GormModelMetadata, error)
+}
+
+type parser struct{}
+
+func NewParser() Parser {
+	return &parser{}
+}
+
 // Parse GORM model metadata from the Go file
-func Parse(filepath string) ([]*entity.GormModelMetadata, error) {
+func (p *parser) Parse(filepath string) ([]*entity.GormModelMetadata, error) {
 	fset := token.NewFileSet()
-	node, err := parser.ParseFile(fset, filepath, nil, parser.SkipObjectResolution) // ParseComments
+
+	node, err := goparser.ParseFile(fset, filepath, nil, goparser.SkipObjectResolution) // ParseComments
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +34,7 @@ func Parse(filepath string) ([]*entity.GormModelMetadata, error) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.TypeSpec:
-			metadata, err := parseGormModel(x)
+			metadata, err := p.parseGormModel(x)
 			if err != nil {
 				panic(err)
 			}
@@ -36,13 +47,13 @@ func Parse(filepath string) ([]*entity.GormModelMetadata, error) {
 }
 
 // Parse metadata about the GORM model node
-func parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, error) {
-	if !checkIsGormModel(node) {
+func (p *parser) parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, error) {
+	if !p.checkIsGormModel(node) {
 		return nil, errors.New("not a GORM model")
 	}
 
 	name := node.Name.Name
-	fields := parseGormModelFields(node)
+	fields := p.parseGormModelFields(node)
 
 	metadata := &entity.GormModelMetadata{
 		Name:   name,
@@ -51,7 +62,7 @@ func parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, error) {
 	return metadata, nil
 }
 
-func parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
+func (p *parser) parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
 	fields := []*entity.GormModelField{}
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch f := n.(type) {
@@ -61,7 +72,7 @@ func parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
 			}
 
 			fName := f.Names[0].Name // TODO(joeriddles): support multiple names
-			fType := parseType(f.Type)
+			fType := p.parseType(f.Type)
 
 			var fTag *string
 			if f.Tag != nil {
@@ -80,17 +91,17 @@ func parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
 	return fields
 }
 
-func parseType(f ast.Expr) string {
+func (p *parser) parseType(f ast.Expr) string {
 	var fType string
 
 	switch t := f.(type) {
 	case *ast.Ident:
 		fType = t.Name
 	case *ast.StarExpr:
-		elementType := parseType(t.X)
+		elementType := p.parseType(t.X)
 		fType = fmt.Sprintf("*%v", elementType)
 	case *ast.ArrayType:
-		elementType := parseType(t.Elt)
+		elementType := p.parseType(t.Elt)
 		fType = fmt.Sprintf("[]%v", elementType)
 	}
 
@@ -98,7 +109,7 @@ func parseType(f ast.Expr) string {
 }
 
 // Check if the ast node is a GORM model
-func checkIsGormModel(node *ast.TypeSpec) bool {
+func (p *parser) checkIsGormModel(node *ast.TypeSpec) bool {
 	var isGorm = false
 
 	ast.Inspect(node, func(n ast.Node) bool {

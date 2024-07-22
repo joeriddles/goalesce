@@ -2,41 +2,41 @@
 package api
 
 import (
-  model "github.com/joeriddles/gorm-oapi-codegen/examples/cars" // TODO(joeriddle): make this dynamic
 	"gorm.io/gorm"
+  model "{{.pkg}}"
 )
 
-type {{.Name}}Mapper interface {
-  MapToModel(obj {{.Name}}) (*model.{{.Name}}, error)
-  MapToApi(model{{.Name}} model.{{.Name}}) (*{{.Name}}, error)
-  MapCreate(obj Create{{.Name}}) (*model.{{.Name}}, error)
-  MapUpdate(obj Update{{.Name}}) (map[string]interface{}, error)
+type {{.model.Name}}Mapper interface {
+  MapToModel(obj {{.model.Name}}) (*model.{{.model.Name}}, error)
+  MapToApi(model{{.model.Name}} model.{{.model.Name}}) (*{{.model.Name}}, error)
+  MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error)
+  MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error)
 }
 
-type _{{.Name}}Mapper struct {
+type _{{.model.Name}}Mapper struct {
 }
 
-func New{{.Name}}Mapper() {{.Name}}Mapper {
-  return &_{{.Name}}Mapper{}
+func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
+  return &_{{.model.Name}}Mapper{}
 }
 
-func (m *_{{.Name}}Mapper) MapToModel(obj {{.Name}}) (*model.{{.Name}}, error) {
-  return &model.{{.Name}}{
+func (m *_{{.model.Name}}Mapper) MapToModel(obj {{.model.Name}}) (*model.{{.model.Name}}, error) {
+  return &model.{{.model.Name}}{
     Model: gorm.Model{ID: uint(obj.Id)},
-    {{range .Fields}}{{if IsSimpleType .Type}}{{.Name}}: {{if IsId .Name}}uint(obj.{{.Name|ToPascalCase}}){{else}}obj.{{.Name|ToPascalCase}}{{end}},{{end}}
+    {{range .Fields}}{{if IsSimpleType .Type}}{{.model.Name}}: {{if IsId .Name}}uint(obj.{{.model.Name|ToPascalCase}}){{else}}obj.{{.model.Name|ToPascalCase}}{{end}},{{end}}
     {{end}}
   }, nil
 }
 
-func (m *_{{.Name}}Mapper) MapToApi(model{{.Name}} model.{{.Name}}) (*{{.Name}}, error) {
+func (m *_{{.model.Name}}Mapper) MapToApi(model{{.model.Name}} model.{{.model.Name}}) (*{{.model.Name}}, error) {
   return nil, nil
 }
 
-func (m *_{{.Name}}Mapper) MapCreate(obj Create{{.Name}}) (*model.{{.Name}}, error) {
+func (m *_{{.model.Name}}Mapper) MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
   return nil, nil
 }
 
-func (m *_{{.Name}}Mapper) MapUpdate(obj Update{{.Name}}) (map[string]interface{}, error) {
+func (m *_{{.model.Name}}Mapper) MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error) {
   return nil, nil
 }
 

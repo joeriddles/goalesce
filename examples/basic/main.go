@@ -4,7 +4,7 @@ import (
 	"gorm.io/gorm"
 )
 
-type Person struct {
+type User struct {
 	gorm.Model
 	Name string `gorm:"column:name;"`
 }

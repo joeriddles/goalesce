@@ -7,11 +7,21 @@ import (
 )
 
 func Test_Basic(t *testing.T) {
-	err := run("../../examples/basic")
+	err := run(
+		"../../examples/basic",
+		"./generated/basic",
+		"github.com/joeriddles/gorm-oapi-codegen/cmd/gorm-oapi-codegen/generated/basic",
+		"github.com/joeriddles/gorm-oapi-codegen/examples/basic",
+	)
 	require.NoError(t, err)
 }
 
 func Test_Cars(t *testing.T) {
-	err := run("../../examples/cars")
+	err := run(
+		"../../examples/cars",
+		"./generated/cars",
+		"github.com/joeriddles/gorm-oapi-codegen/cmd/gorm-oapi-codegen/generated/cars",
+		"github.com/joeriddles/gorm-oapi-codegen/examples/cars",
+	)
 	require.NoError(t, err)
 }

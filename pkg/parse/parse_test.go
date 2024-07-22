@@ -10,7 +10,8 @@ import (
 )
 
 func TestParse_Basic(t *testing.T) {
-	actual, err := Parse("../../examples/basic/main.go")
+	parser := NewParser()
+	actual, err := parser.Parse("../../examples/basic/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(actual))
 
@@ -30,7 +31,8 @@ func TestParse_Basic(t *testing.T) {
 }
 
 func TestParse_Cars(t *testing.T) {
-	actual, err := Parse("../../examples/cars/main.go")
+	parser := NewParser()
+	actual, err := parser.Parse("../../examples/cars/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 5, len(actual))
 

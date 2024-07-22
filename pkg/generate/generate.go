@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
@@ -19,41 +20,60 @@ import (
 //go:embed templates
 var templates embed.FS
 
+type Generator interface {
+	Generate(metadatas []*entity.GormModelMetadata) error
+}
+
+type generator struct {
+	outputPath    string
+	moduleName    string
+	modelsPkgName string
+}
+
+func NewGenerator(outputPath, moduleName, modelsPkgName string) Generator {
+	return &generator{
+		outputPath:    outputPath,
+		moduleName:    moduleName,
+		modelsPkgName: modelsPkgName,
+	}
+}
+
 // Generate from GORM model metadata
-func Generate(metadatas []*entity.GormModelMetadata) error {
+func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	t := template.New("gorm_oapi_codegen")
-	if err := loadTemplates(templates, t); err != nil {
+	if err := g.loadTemplates(templates, t); err != nil {
 		return err
 	}
 
-	if err := os.RemoveAll("./generated"); err != nil {
+	// TODO(joeriddles): notify user before deleting this path
+	if err := os.RemoveAll(g.outputPath); err != nil {
 		return err
 	}
 
 	if err := createDirs(
-		"./generated",
-		"./generated/api",
-		"./generated/repository",
+		g.outputPath,
+		filepath.Join(g.outputPath, "api"),
+		filepath.Join(g.outputPath, "repository"),
 	); err != nil {
 		return err
 	}
 
 	for _, metadata := range metadatas {
-		_, err := generateOpenApiRoutes(t, metadata)
+		_, err := g.generateOpenApiRoutes(t, metadata)
 		if err != nil {
 			return err
 		}
 	}
 
-	if err := generateOpenApiBase(t, metadatas); err != nil {
+	if err := g.generateOpenApiBase(t, metadatas); err != nil {
 		return err
 	}
 
-	if err := combineOpenApiFiles(); err != nil {
+	if err := g.combineOpenApiFiles(); err != nil {
 		return err
 	}
 
-	swagger, err := util.LoadSwagger("./generated/openapi.yaml")
+	swagger, err := util.LoadSwagger(filepath.Join(g.outputPath, "openapi.yaml"))
 	if err != nil {
 		return err
 	}
@@ -65,7 +85,7 @@ func Generate(metadatas []*entity.GormModelMetadata) error {
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile("./generated/api/types.gen.go", []byte(code), 0o644); err != nil {
+	if err = os.WriteFile(filepath.Join(g.outputPath, "api", "types.gen.go"), []byte(code), 0o644); err != nil {
 		return err
 	}
 
@@ -81,44 +101,47 @@ func Generate(metadatas []*entity.GormModelMetadata) error {
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile("./generated/api/server_interface.gen.go", []byte(code), 0o644); err != nil {
+	if err = os.WriteFile(filepath.Join(g.outputPath, "api", "server_interface.gen.go"), []byte(code), 0o644); err != nil {
 		return err
 	}
 
 	for _, metadata := range metadatas {
-		if err := generateController(t, metadata); err != nil {
+		if err := g.generateController(t, metadata); err != nil {
 			return err
 		}
-		if err := generateRepository(t, metadata); err != nil {
+		if err := g.generateRepository(t, metadata); err != nil {
 			return err
 		}
-		if err := generateMapper(t, metadata); err != nil {
+		if err := g.generateMapper(t, metadata); err != nil {
 			return err
 		}
 	}
 
-	if err := generateServer(t, metadatas); err != nil {
+	if err := g.generateServer(t, metadatas); err != nil {
 		return err
 	}
-	if err := generateMain(t); err != nil {
+	if err := g.generateMain(t); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func combineOpenApiFiles() error {
-	f, err := os.Create("./generated/openapi.yaml")
+func (g *generator) combineOpenApiFiles() error {
+	outputFp := filepath.Join(g.outputPath, "openapi.yaml")
+	f, err := os.Create(outputFp)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
+	baseFp := filepath.Join(g.outputPath, "openapi_base.gen.yaml")
+
 	args := []string{
 		"bundle",
 		"--output",
-		"./generated/openapi.yaml",
-		"./generated/openapi_base.gen.yaml",
+		outputFp,
+		baseFp,
 	}
 
 	if output, err := runNpxCommand(
@@ -130,25 +153,25 @@ func combineOpenApiFiles() error {
 	}
 
 	// TODO(joeriddles): add --prune option to CLI
-	entries, err := os.ReadDir("./generated")
+	entries, err := os.ReadDir(g.outputPath)
 	if err != nil {
 		return err
 	}
 	for _, entry := range entries {
 		filename := entry.Name()
 		if strings.HasSuffix(filename, ".yaml") && filename != "openapi.yaml" {
-			if err := os.Remove(fmt.Sprintf("./generated/%v", filename)); err != nil {
+			if err := os.Remove(filepath.Join(g.outputPath, filename)); err != nil {
 				return err
 			}
 		}
 	}
 
 	return nil
-
 }
 
-func generateOpenApiBase(t *template.Template, metadatas []*entity.GormModelMetadata) error {
-	f, err := os.Create("generated/openapi_base.gen.yaml")
+func (g *generator) generateOpenApiBase(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+	fp := filepath.Join(g.outputPath, "openapi_base.gen.yaml")
+	f, err := os.Create(fp)
 	if err != nil {
 		return err
 	}
@@ -161,72 +184,85 @@ func generateOpenApiBase(t *template.Template, metadatas []*entity.GormModelMeta
 	return nil
 }
 
-func generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetadata) (string, error) {
-	filename := fmt.Sprintf("./generated/%v.gen.yaml", utils.ToSnakeCase(metadata.Name))
-	f, err := os.Create(filename)
+func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetadata) (string, error) {
+	fp := filepath.Join(g.outputPath, fmt.Sprintf("%v.gen.yaml", utils.ToSnakeCase(metadata.Name)))
+	f, err := os.Create(fp)
 	if err != nil {
 		return "", err
 	}
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "openapi_controller.yaml", &metadata)
+	t.ExecuteTemplate(w, "openapi_controller.yaml", metadata)
 	w.Flush()
 
-	return filename, nil
+	return fp, nil
 }
 
-func generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
-	filepath := fmt.Sprintf("generated/api/%v_controller.gen.go", utils.ToSnakeCase(metadata.Name))
-	return generateGo(
+func (g *generator) generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
+	fp := filepath.Join(g.outputPath, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
+	return g.generateGo(
 		t,
-		filepath,
+		fp,
 		"controller.tmpl",
-		&metadata,
+		map[string]interface{}{
+			"module": g.moduleName,
+			"model":  metadata,
+		},
 	)
 }
 
-func generateServer(t *template.Template, metadatas []*entity.GormModelMetadata) error {
-	return generateGo(
+func (g *generator) generateServer(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+	fp := filepath.Join(g.outputPath, "api", "server.gen.go")
+	return g.generateGo(
 		t,
-		"generated/api/server.gen.go",
+		fp,
 		"server.tmpl",
 		metadatas,
 	)
 }
 
-func generateRepository(t *template.Template, metadata *entity.GormModelMetadata) error {
-	filepath := fmt.Sprintf("generated/repository/%v_repository.gen.go", utils.ToSnakeCase(metadata.Name))
-	return generateGo(
+func (g *generator) generateRepository(t *template.Template, metadata *entity.GormModelMetadata) error {
+	fp := filepath.Join(g.outputPath, "repository", fmt.Sprintf("%v_repository.gen.go", utils.ToSnakeCase(metadata.Name)))
+	return g.generateGo(
 		t,
-		filepath,
+		fp,
 		"repository.tmpl",
-		&metadata,
+		map[string]interface{}{
+			"pkg":   g.modelsPkgName,
+			"model": metadata,
+		},
 	)
 }
 
-func generateMapper(t *template.Template, metadata *entity.GormModelMetadata) error {
-	filepath := fmt.Sprintf("generated/api/%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name))
-	return generateGo(
+func (g *generator) generateMapper(t *template.Template, metadata *entity.GormModelMetadata) error {
+	fp := filepath.Join(g.outputPath, "api", fmt.Sprintf("%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
+	return g.generateGo(
 		t,
-		filepath,
+		fp,
 		"mapper.tmpl",
-		&metadata,
+		map[string]interface{}{
+			"pkg":   g.modelsPkgName,
+			"model": metadata,
+		},
 	)
 }
 
-func generateMain(t *template.Template) error {
-	return generateGo(
+func (g *generator) generateMain(t *template.Template) error {
+	fp := filepath.Join(g.outputPath, "main.go")
+	return g.generateGo(
 		t,
-		"generated/main.go",
+		fp,
 		"main.tmpl",
-		nil,
+		map[string]interface{}{
+			"module": g.moduleName,
+		},
 	)
 }
 
 // Generate formatted Go code at the filepath with the template
-func generateGo(t *template.Template, filepath string, template string, data any) error {
-	f, err := os.Create(filepath)
+func (g *generator) generateGo(t *template.Template, fp string, template string, data any) error {
+	f, err := os.Create(fp)
 	if err != nil {
 		return err
 	}
@@ -236,6 +272,7 @@ func generateGo(t *template.Template, filepath string, template string, data any
 	t.ExecuteTemplate(w, template, data)
 	w.Flush()
 
+	// TODO(joeriddles): format Go files
 	// outBytes, err := imports.Process(filepath, nil, &imports.Options{
 	// 	FormatOnly: true,
 	// })
@@ -254,7 +291,7 @@ func generateGo(t *template.Template, filepath string, template string, data any
 
 // loadTemplates loads all of our template files into a text/template. The
 // path of template is relative to the templates directory.
-func loadTemplates(src embed.FS, t *template.Template) error {
+func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 	funcMap := template.FuncMap{
 		"ToLower":       strings.ToLower,
 		"ToCamelCase":   utils.ToCamelCase,
@@ -360,7 +397,7 @@ func not(v bool) bool {
 
 func createDirs(paths ...string) error {
 	for _, path := range paths {
-		if err := os.Mkdir(path, os.ModePerm); err != nil {
+		if err := os.MkdirAll(path, os.ModePerm); err != nil {
 			if err.Error() != "mkdir generated: file exists" {
 				return err
 			}
