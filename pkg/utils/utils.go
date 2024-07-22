@@ -1,6 +1,9 @@
 package utils
 
 import (
+	"fmt"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -48,4 +51,29 @@ func ToPascalCase(s string) string {
 	}
 	camelCase := ToCamelCase(s)
 	return strings.ToUpper(camelCase[0:1]) + camelCase[1:]
+}
+
+// FindGoMod searches upwards from the given path for a go.mod file
+func FindGoMod(startPath string) (string, error) {
+	absPath, err := filepath.Abs(startPath)
+	if err != nil {
+		return "", err
+	}
+
+	for {
+		goModPath := filepath.Join(absPath, "go.mod")
+		if _, err := os.Stat(goModPath); err == nil {
+			return goModPath, nil
+		}
+
+		// Move up one directory level
+		parentPath := filepath.Dir(absPath)
+		if parentPath == absPath {
+			// We have reached the root directory
+			break
+		}
+		absPath = parentPath
+	}
+
+	return "", fmt.Errorf("go.mod file not found")
 }

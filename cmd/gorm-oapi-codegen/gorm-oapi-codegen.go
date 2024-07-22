@@ -88,7 +88,10 @@ func run(folderPath string, outputPath, moduleName, modelsPkgName string) error 
 			return err
 		}
 
-		generator := generate.NewGenerator(outputPath, moduleName, modelsPkgName)
+		generator, err := generate.NewGenerator(outputPath, moduleName, modelsPkgName)
+		if err != nil {
+			return err
+		}
 		if err := generator.Generate(metadatas); err != nil {
 			return err
 		}

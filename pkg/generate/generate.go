@@ -28,14 +28,27 @@ type generator struct {
 	outputPath    string
 	moduleName    string
 	modelsPkgName string
+
+	relativePkgPath string
 }
 
-func NewGenerator(outputPath, moduleName, modelsPkgName string) Generator {
-	return &generator{
-		outputPath:    outputPath,
-		moduleName:    moduleName,
-		modelsPkgName: modelsPkgName,
+func NewGenerator(outputPath, moduleName, modelsPkgName string) (Generator, error) {
+	modulePath, err := utils.FindGoMod(outputPath)
+	if err != nil {
+		return nil, err
 	}
+	moduleRootPath := filepath.Dir(modulePath)
+	relPath, err := filepath.Rel(moduleRootPath, outputPath)
+	if err != nil {
+		return nil, err
+	}
+
+	return &generator{
+		outputPath:      outputPath,
+		moduleName:      moduleName,
+		modelsPkgName:   modelsPkgName,
+		relativePkgPath: relPath,
+	}, nil
 }
 
 // Generate from GORM model metadata
@@ -201,13 +214,14 @@ func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity
 
 func (g *generator) generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
 	fp := filepath.Join(g.outputPath, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
+	repositoryImportPath := filepath.Join(g.moduleName, g.relativePkgPath, "repository")
 	return g.generateGo(
 		t,
 		fp,
 		"controller.tmpl",
 		map[string]interface{}{
-			"module": g.moduleName,
-			"model":  metadata,
+			"repositoryImportPath": repositoryImportPath,
+			"model":                metadata,
 		},
 	)
 }
@@ -250,12 +264,13 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 
 func (g *generator) generateMain(t *template.Template) error {
 	fp := filepath.Join(g.outputPath, "main.go")
+	apiImportPath := filepath.Join(g.moduleName, g.relativePkgPath, "api")
 	return g.generateGo(
 		t,
 		fp,
 		"main.tmpl",
 		map[string]interface{}{
-			"module": g.moduleName,
+			"apiImportPath": apiImportPath,
 		},
 	)
 }

@@ -17,7 +17,7 @@ func TestParse_Basic(t *testing.T) {
 
 	expectedTag := "`gorm:\"column:name;\"`"
 	expected := &entity.GormModelMetadata{
-		Name: "Person",
+		Name: "User",
 		Fields: []*entity.GormModelField{
 			{
 				Name: "Name",
