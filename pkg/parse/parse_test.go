@@ -11,19 +11,40 @@ import (
 )
 
 func TestParse_Basic(t *testing.T) {
-	parser := NewParser(log.Default())
+	parser := NewParser(log.Default(), false)
 	actual, err := parser.Parse("../../examples/basic/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(actual))
 
-	expectedTag := "`gorm:\"column:name;\"`"
+	expectedIdTag := "`gorm:\"primarykey\"`"
+	expectedDeletedAtTag := "`gorm:\"index\"`"
+	expectedNameTag := "`gorm:\"column:name;\"`"
+
 	expected := &entity.GormModelMetadata{
 		Name: "User",
 		Fields: []*entity.GormModelField{
 			{
+				Name: "Model.ID",
+				Type: "uint",
+				Tag:  &expectedIdTag,
+			},
+			{
+				Name: "Model.CreatedAt",
+				Type: "time.Time",
+			},
+			{
+				Name: "Model.UpdatedAt",
+				Type: "time.Time",
+			},
+			{
+				Name: "Model.DeletedAt",
+				Type: "gorm.DeletedAt",
+				Tag:  &expectedDeletedAtTag,
+			},
+			{
 				Name: "Name",
 				Type: "string",
-				Tag:  &expectedTag,
+				Tag:  &expectedNameTag,
 			},
 		},
 	}
@@ -32,14 +53,35 @@ func TestParse_Basic(t *testing.T) {
 }
 
 func TestParse_Cars(t *testing.T) {
-	parser := NewParser(log.Default())
+	parser := NewParser(log.Default(), false)
 	actual, err := parser.Parse("../../examples/cars/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 5, len(actual))
 
+	expectedIdTag := "`gorm:\"primarykey\"`"
+	expectedDeletedAtTag := "`gorm:\"index\"`"
+
 	expectedManufacturer := &entity.GormModelMetadata{
 		Name: "Manufacturer",
 		Fields: []*entity.GormModelField{
+			{
+				Name: "Model.ID",
+				Type: "uint",
+				Tag:  &expectedIdTag,
+			},
+			{
+				Name: "Model.CreatedAt",
+				Type: "time.Time",
+			},
+			{
+				Name: "Model.UpdatedAt",
+				Type: "time.Time",
+			},
+			{
+				Name: "Model.DeletedAt",
+				Type: "gorm.DeletedAt",
+				Tag:  &expectedDeletedAtTag,
+			},
 			{
 				Name: "Name",
 				Type: "string",
@@ -54,6 +96,24 @@ func TestParse_Cars(t *testing.T) {
 	expectedModel := &entity.GormModelMetadata{
 		Name: "Model",
 		Fields: []*entity.GormModelField{
+			{
+				Name: "Model.ID",
+				Type: "uint",
+				Tag:  &expectedIdTag,
+			},
+			{
+				Name: "Model.CreatedAt",
+				Type: "time.Time",
+			},
+			{
+				Name: "Model.UpdatedAt",
+				Type: "time.Time",
+			},
+			{
+				Name: "Model.DeletedAt",
+				Type: "gorm.DeletedAt",
+				Tag:  &expectedDeletedAtTag,
+			},
 			{
 				Name: "Name",
 				Type: "string",
@@ -88,4 +148,44 @@ func assertJsonEq(t *testing.T, expected any, actual any) {
 	expectedJson := string(expectedBytes)
 
 	assert.JSONEq(t, expectedJson, actualJson)
+}
+
+func TestParse_Custom(t *testing.T) {
+	parser := NewParser(log.Default(), true)
+	actual, err := parser.Parse("../../examples/custom/main.go")
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(actual))
+
+	expectedIdTag := "`gorm:\"column:id;type:bigint;primaryKey;autoIncrement:true\" json:\"id\"`"
+	expectedCreatedAtTag := "`gorm:\"column:created_at;type:timestamp with time zone\" json:\"created_at\"`"
+	expectedUpdatedAtTag := "`gorm:\"column:updated_at;type:timestamp with time zone\" json:\"updated_at\"`"
+	expectedDeletedAtTag := "`gorm:\"column:deleted_at;type:timestamp with time zone\" json:\"deleted_at\"`"
+
+	expected := &entity.GormModelMetadata{
+		Name: "Custom",
+		Fields: []*entity.GormModelField{
+			{
+				Name: "ID",
+				Type: "int64",
+				Tag:  &expectedIdTag,
+			},
+			{
+				Name: "CreatedAt",
+				Type: "time.Time",
+				Tag:  &expectedCreatedAtTag,
+			},
+			{
+				Name: "UpdatedAt",
+				Type: "time.Time",
+				Tag:  &expectedUpdatedAtTag,
+			},
+			{
+				Name: "DeletedAt",
+				Type: "gorm.DeletedAt",
+				Tag:  &expectedDeletedAtTag,
+			},
+		},
+	}
+
+	assertJsonEq(t, expected, &actual[0])
 }

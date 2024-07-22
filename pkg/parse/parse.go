@@ -11,6 +11,11 @@ import (
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 )
 
+var (
+	gormModelIdTag        string = "`gorm:\"primarykey\"`"
+	gormModelDeletedAtTag string = "`gorm:\"index\"`"
+)
+
 type Parser interface {
 	Parse(filepath string) ([]*entity.GormModelMetadata, error)
 }
@@ -79,7 +84,21 @@ func (p *parser) parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelFie
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch f := n.(type) {
 		case *ast.Field:
+			// embedded structs
 			if len(f.Names) == 0 {
+				fType := p.parseType(f.Type)
+				if fType == "gorm.Model" {
+					// TODO(joeriddles): handle any embedded struct
+					// gormPath := reflect.TypeOf(gorm.Model{}).PkgPath()
+
+					fields = append(
+						fields,
+						&entity.GormModelField{Name: "Model.ID", Type: "uint", Tag: &gormModelIdTag},
+						&entity.GormModelField{Name: "Model.CreatedAt", Type: "time.Time"},
+						&entity.GormModelField{Name: "Model.UpdatedAt", Type: "time.Time"},
+						&entity.GormModelField{Name: "Model.DeletedAt", Type: "gorm.DeletedAt", Tag: &gormModelDeletedAtTag},
+					)
+				}
 				break
 			}
 
@@ -115,6 +134,8 @@ func (p *parser) parseType(f ast.Expr) string {
 	case *ast.ArrayType:
 		elementType := p.parseType(t.Elt)
 		fType = fmt.Sprintf("[]%v", elementType)
+	case *ast.SelectorExpr:
+		fType = fmt.Sprintf("%v.%v", p.parseType(t.X), p.parseType(t.Sel))
 	}
 
 	return fType

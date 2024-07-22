@@ -15,6 +15,7 @@ func Test_Basic(t *testing.T) {
 	require.NoError(t, err)
 	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
 	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/basic")
+	cfg.WithClearOutputDir(true)
 
 	err = run(cfg)
 	require.NoError(t, err)
@@ -28,6 +29,7 @@ func Test_Cars(t *testing.T) {
 	require.NoError(t, err)
 	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
 	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/cars")
+	cfg.WithClearOutputDir(true)
 
 	err = run(cfg)
 	require.NoError(t, err)
@@ -41,6 +43,8 @@ func Test_Custom(t *testing.T) {
 	require.NoError(t, err)
 	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
 	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/custom")
+	cfg.WithAllowCustomModels(true)
+	cfg.WithClearOutputDir(true)
 
 	err = run(cfg)
 	require.NoError(t, err)
