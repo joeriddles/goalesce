@@ -12,24 +12,34 @@ import (
 )
 
 var (
+	flagPrintUsage bool
+
 	flagOutputFile string
 	flagModuleName string
 	flagModelsPkg  string
 )
 
 func main() {
+	flag.BoolVar(&flagPrintUsage, "help", false, "Show this help and exit.")
+	flag.BoolVar(&flagPrintUsage, "h", false, "Same as -help.")
+
 	flag.StringVar(&flagOutputFile, "o", "./generated", "Where to output generated code, ./generated/ is default.")
 	flag.StringVar(&flagModuleName, "module", "", "The name of the module the generated code will be part of")
 	flag.StringVar(&flagModelsPkg, "pkg", "", "The name of the package that the GORM models are part of")
 
 	flag.Parse()
 
+	if flagPrintUsage {
+		flag.Usage()
+		os.Exit(0)
+	}
+
 	if flagModuleName == "" {
-		errExit("Please specify a module name\n")
+		errExit("Please specify a module name with -module\n")
 	}
 
 	if flagModelsPkg == "" {
-		errExit("Please specify a package name for the GORM models\n")
+		errExit("Please specify a package name for the GORM models with -pkg\n")
 	}
 
 	if flag.NArg() < 1 {
