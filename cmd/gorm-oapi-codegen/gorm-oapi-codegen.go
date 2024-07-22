@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/generate"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/parse"
@@ -39,6 +40,10 @@ func run(folderPath string) error {
 	entries, err := os.ReadDir(folderPath)
 	for _, entry := range entries {
 		filename := entry.Name()
+		if !strings.HasSuffix(".go", filename) {
+			continue
+		}
+
 		entryFilepath := filepath.Join(folderPath, filename)
 		metadatas, err := parse.Parse(entryFilepath)
 		if err != nil {
