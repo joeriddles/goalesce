@@ -11,16 +11,25 @@ type Config interface {
 	ModuleName() string
 	ModelsPkg() string
 	ClearOutputDir() bool
+	AllowCustomModels() bool
+
+	WithInputFolderPath(value string) error
+	WithOutputFile(value string) error
+	WithModuleName(value string)
+	WithModelPkg(value string)
+	WithClearOutputDir(value bool)
+	WithAllowCustomModels(value bool)
 }
 
 var _ Config = &config{}
 
 type config struct {
-	inputFolderPath string
-	outputFile      string
-	moduleName      string
-	modelsPkg       string
-	clearOutputDir  bool
+	inputFolderPath   string
+	outputFile        string
+	moduleName        string
+	modelsPkg         string
+	clearOutputDir    bool
+	allowCustomModels bool
 }
 
 func NewConfig() *config {
@@ -45,6 +54,10 @@ func (c *config) ModuleName() string {
 
 func (c *config) OutputFile() string {
 	return c.outputFile
+}
+
+func (c *config) AllowCustomModels() bool {
+	return c.allowCustomModels
 }
 
 func (c *config) WithInputFolderPath(value string) error {
@@ -80,4 +93,8 @@ func (c *config) WithModelPkg(value string) {
 
 func (c *config) WithClearOutputDir(value bool) {
 	c.clearOutputDir = value
+}
+
+func (c *config) WithAllowCustomModels(value bool) {
+	c.allowCustomModels = value
 }

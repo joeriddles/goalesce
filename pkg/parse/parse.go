@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	goparser "go/parser"
 	"go/token"
+	"log"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 )
@@ -14,10 +15,16 @@ type Parser interface {
 	Parse(filepath string) ([]*entity.GormModelMetadata, error)
 }
 
-type parser struct{}
+type parser struct {
+	logger            *log.Logger
+	allowCustomModels bool
+}
 
-func NewParser() Parser {
-	return &parser{}
+func NewParser(logger *log.Logger, allowCustomModels bool) Parser {
+	return &parser{
+		logger:            logger,
+		allowCustomModels: allowCustomModels,
+	}
 }
 
 // Parse GORM model metadata from the Go file
@@ -49,7 +56,12 @@ func (p *parser) Parse(filepath string) ([]*entity.GormModelMetadata, error) {
 // Parse metadata about the GORM model node
 func (p *parser) parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, error) {
 	if !p.checkIsGormModel(node) {
-		return nil, errors.New("not a GORM model")
+		msg := fmt.Sprintf("%v is does not inherit from gorm.Model", node.Name.Name)
+		if p.allowCustomModels {
+			p.logger.Print(msg)
+		} else {
+			return nil, errors.New(msg)
+		}
 	}
 
 	name := node.Name.Name

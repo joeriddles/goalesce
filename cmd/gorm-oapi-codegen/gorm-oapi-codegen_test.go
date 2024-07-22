@@ -3,25 +3,45 @@ package main
 import (
 	"testing"
 
+	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_Basic(t *testing.T) {
-	err := run(
-		"../../examples/basic",
-		"./generated/basic",
-		"github.com/joeriddles/gorm-oapi-codegen",
-		"github.com/joeriddles/gorm-oapi-codegen/examples/basic",
-	)
+	cfg := config.NewConfig()
+	err := cfg.WithInputFolderPath("../../examples/basic")
+	require.NoError(t, err)
+	err = cfg.WithOutputFile("./generated/basic")
+	require.NoError(t, err)
+	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
+	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/basic")
+
+	err = run(cfg)
 	require.NoError(t, err)
 }
 
 func Test_Cars(t *testing.T) {
-	err := run(
-		"../../examples/cars",
-		"./generated/cars",
-		"github.com/joeriddles/gorm-oapi-codegen",
-		"github.com/joeriddles/gorm-oapi-codegen/examples/cars",
-	)
+	cfg := config.NewConfig()
+	err := cfg.WithInputFolderPath("../../examples/cars")
+	require.NoError(t, err)
+	err = cfg.WithOutputFile("./generated/cars")
+	require.NoError(t, err)
+	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
+	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/cars")
+
+	err = run(cfg)
+	require.NoError(t, err)
+}
+
+func Test_Custom(t *testing.T) {
+	cfg := config.NewConfig()
+	err := cfg.WithInputFolderPath("../../examples/custom")
+	require.NoError(t, err)
+	err = cfg.WithOutputFile("./generated/custom")
+	require.NoError(t, err)
+	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
+	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/custom")
+
+	err = run(cfg)
 	require.NoError(t, err)
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,10 +16,11 @@ import (
 var (
 	flagPrintUsage bool
 
-	flagOutputFile     string
-	flagModuleName     string
-	flagModelsPkg      string
-	flagClearOutputDir bool
+	flagOutputFile        string
+	flagModuleName        string
+	flagModelsPkg         string
+	flagClearOutputDir    bool
+	flagAllowCustomModels bool
 )
 
 func main() {
@@ -29,6 +31,7 @@ func main() {
 	flag.StringVar(&flagModuleName, "module", "", "The name of the module the generated code will be part of")
 	flag.StringVar(&flagModelsPkg, "pkg", "", "The name of the package that the GORM models are part of")
 	flag.BoolVar(&flagClearOutputDir, "clear", false, "If true, clears the contents of the output directory before generating new files")
+	flag.BoolVar(&flagAllowCustomModels, "custom", false, "If true, parses classes that do not inherit from gorm.Model")
 
 	flag.Parse()
 
@@ -81,7 +84,7 @@ func run(cfg config.Config) error {
 		return err
 	}
 
-	parser := parse.NewParser()
+	parser := parse.NewParser(log.Default(), cfg.AllowCustomModels())
 	for _, entry := range entries {
 		filename := entry.Name()
 		if !strings.HasSuffix(filename, ".go") {

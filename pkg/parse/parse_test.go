@@ -2,6 +2,7 @@ package parse
 
 import (
 	"encoding/json"
+	"log"
 	"testing"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
@@ -10,7 +11,7 @@ import (
 )
 
 func TestParse_Basic(t *testing.T) {
-	parser := NewParser()
+	parser := NewParser(log.Default())
 	actual, err := parser.Parse("../../examples/basic/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(actual))
@@ -31,7 +32,7 @@ func TestParse_Basic(t *testing.T) {
 }
 
 func TestParse_Cars(t *testing.T) {
-	parser := NewParser()
+	parser := NewParser(log.Default())
 	actual, err := parser.Parse("../../examples/cars/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 5, len(actual))
