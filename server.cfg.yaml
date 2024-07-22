@@ -1,4 +1,0 @@
-package: api
-generate:
-  std-http-server: true
-output: server.gen.go

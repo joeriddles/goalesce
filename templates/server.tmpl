@@ -1,0 +1,37 @@
+package api
+
+import (
+	"context"
+)
+
+var _ StrictServerInterface = (*Server)(nil)
+
+type Server struct {
+  {{range .}}{{.Name}}Controller
+  {{end}}
+}
+
+func NewServer() *Server {
+	return &Server{}
+}
+
+{{range .}}func (s *Server) Get{{.Name}}(ctx context.Context, request Get{{.Name}}RequestObject) (Get{{.Name}}ResponseObject, error) {
+  return s.{{.Name}}Controller.Get{{.Name}}(ctx, request)
+}
+
+func (s *Server) Post{{.Name}}(ctx context.Context, request Post{{.Name}}RequestObject) (Post{{.Name}}ResponseObject, error) {
+  return s.{{.Name}}Controller.Post{{.Name}}(ctx, request)
+}
+
+func (s *Server) Delete{{.Name}}Id(ctx context.Context, request Delete{{.Name}}IdRequestObject) (Delete{{.Name}}IdResponseObject, error) {
+  return s.{{.Name}}Controller.Delete{{.Name}}Id(ctx, request)
+}
+
+func (s *Server) Get{{.Name}}Id(ctx context.Context, request Get{{.Name}}IdRequestObject) (Get{{.Name}}IdResponseObject, error) {
+  return s.{{.Name}}Controller.Get{{.Name}}Id(ctx, request)
+}
+
+func (s *Server) Put{{.Name}}Id(ctx context.Context, request Put{{.Name}}IdRequestObject) (Put{{.Name}}IdResponseObject, error) {
+  return s.{{.Name}}Controller.Put{{.Name}}Id(ctx, request)
+}
+{{end}}

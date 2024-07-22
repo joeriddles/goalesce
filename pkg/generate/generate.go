@@ -14,7 +14,6 @@ import (
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
-	"golang.org/x/tools/imports"
 )
 
 // Generate from GORM model metadata
@@ -30,8 +29,7 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 
 	if err := createDirs(
 		"./generated",
-		"./generated/controller",
-		"./generated/mapper",
+		"./generated/api",
 		"./generated/repository",
 	); err != nil {
 		return err
@@ -64,7 +62,7 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile("./generated/types.gen.go", []byte(code), 0o644); err != nil {
+	if err = os.WriteFile("./generated/api/types.gen.go", []byte(code), 0o644); err != nil {
 		return err
 	}
 
@@ -73,13 +71,14 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 		Generate: codegen.GenerateOptions{
 			StdHTTPServer: true,
 			Strict:        true,
+			EmbeddedSpec:  true,
 		},
 	})
 
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile("./generated/server.gen.go", []byte(code), 0o644); err != nil {
+	if err = os.WriteFile("./generated/api/server_interface.gen.go", []byte(code), 0o644); err != nil {
 		return err
 	}
 
@@ -93,6 +92,13 @@ func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
 		if err := generateMapper(t, metadata); err != nil {
 			return err
 		}
+	}
+
+	if err := generateServer(t, metadatas); err != nil {
+		return err
+	}
+	if err := generateMain(t); err != nil {
+		return err
 	}
 
 	return nil
@@ -168,12 +174,21 @@ func generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetad
 }
 
 func generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
-	filepath := fmt.Sprintf("generated/controller/%v_controller.gen.go", utils.ToSnakeCase(metadata.Name))
+	filepath := fmt.Sprintf("generated/api/%v_controller.gen.go", utils.ToSnakeCase(metadata.Name))
 	return generateGo(
 		t,
 		filepath,
 		"controller.tmpl",
 		&metadata,
+	)
+}
+
+func generateServer(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+	return generateGo(
+		t,
+		"generated/api/server.gen.go",
+		"server.tmpl",
+		metadatas,
 	)
 }
 
@@ -188,12 +203,21 @@ func generateRepository(t *template.Template, metadata *entity.GormModelMetadata
 }
 
 func generateMapper(t *template.Template, metadata *entity.GormModelMetadata) error {
-	filepath := fmt.Sprintf("generated/mapper/%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name))
+	filepath := fmt.Sprintf("generated/api/%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name))
 	return generateGo(
 		t,
 		filepath,
 		"mapper.tmpl",
 		&metadata,
+	)
+}
+
+func generateMain(t *template.Template) error {
+	return generateGo(
+		t,
+		"generated/main.go",
+		"main.tmpl",
+		nil,
 	)
 }
 
@@ -209,18 +233,18 @@ func generateGo(t *template.Template, filepath string, template string, data any
 	t.ExecuteTemplate(w, template, data)
 	w.Flush()
 
-	outBytes, err := imports.Process(filepath, nil, &imports.Options{
-		FormatOnly: true,
-	})
-	if err != nil {
-		return err
-	}
+	// outBytes, err := imports.Process(filepath, nil, &imports.Options{
+	// 	FormatOnly: true,
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
-	w = bufio.NewWriter(f)
-	_, err = w.Write(outBytes)
-	if err != nil {
-		return err
-	}
+	// w = bufio.NewWriter(f)
+	// _, err = w.Write(outBytes)
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
