@@ -71,6 +71,7 @@ func main() {
 	cfg.WithModuleName(flagModuleName)
 	cfg.WithModelPkg(flagModelsPkg)
 	cfg.WithClearOutputDir(flagClearOutputDir)
+	cfg.WithAllowCustomModels(flagAllowCustomModels)
 
 	if err := run(cfg); err != nil {
 		errExit(err.Error())

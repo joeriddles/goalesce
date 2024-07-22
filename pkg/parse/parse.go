@@ -56,7 +56,7 @@ func (p *parser) Parse(filepath string) ([]*entity.GormModelMetadata, error) {
 // Parse metadata about the GORM model node
 func (p *parser) parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, error) {
 	if !p.checkIsGormModel(node) {
-		msg := fmt.Sprintf("%v is does not inherit from gorm.Model", node.Name.Name)
+		msg := fmt.Sprintf("%v does not inherit from gorm.Model", node.Name.Name)
 		if p.allowCustomModels {
 			p.logger.Print(msg)
 		} else {
