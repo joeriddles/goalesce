@@ -16,8 +16,11 @@ import (
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 )
 
+//go:embed templates
+var templates embed.FS
+
 // Generate from GORM model metadata
-func Generate(templates embed.FS, metadatas []*entity.GormModelMetadata) error {
+func Generate(metadatas []*entity.GormModelMetadata) error {
 	t := template.New("gorm_oapi_codegen")
 	if err := loadTemplates(templates, t); err != nil {
 		return err

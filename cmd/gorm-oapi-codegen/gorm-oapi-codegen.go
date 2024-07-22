@@ -1,7 +1,6 @@
 package main
 
 import (
-	"embed"
 	"flag"
 	"fmt"
 	"os"
@@ -10,16 +9,6 @@ import (
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/generate"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/parse"
 )
-
-// Embed the templates directory
-//
-//go:embed templates
-var templates embed.FS
-
-func errExit(format string, args ...interface{}) {
-	_, _ = fmt.Fprintf(os.Stderr, format, args...)
-	os.Exit(1)
-}
 
 func main() {
 	flag.Parse()
@@ -55,9 +44,14 @@ func run(folderPath string) error {
 		if err != nil {
 			return err
 		}
-		if err := generate.Generate(templates, metadatas); err != nil {
+		if err := generate.Generate(metadatas); err != nil {
 			return err
 		}
 	}
 	return err
+}
+
+func errExit(format string, args ...interface{}) {
+	_, _ = fmt.Fprintf(os.Stderr, format, args...)
+	os.Exit(1)
 }
