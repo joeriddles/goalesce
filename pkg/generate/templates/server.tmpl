@@ -12,7 +12,10 @@ type Server struct {
 }
 
 func NewServer() *Server {
-	return &Server{}
+	return &Server{
+    {{range .}}{{.Name}}Controller: New{{.Name}}Controller(),
+    {{end}}
+  }
 }
 
 {{range .}}func (s *Server) Get{{.Name}}(ctx context.Context, request Get{{.Name}}RequestObject) (Get{{.Name}}ResponseObject, error) {
