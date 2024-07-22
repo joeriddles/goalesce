@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/generate"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/parse"
 )
@@ -14,9 +15,10 @@ import (
 var (
 	flagPrintUsage bool
 
-	flagOutputFile string
-	flagModuleName string
-	flagModelsPkg  string
+	flagOutputFile     string
+	flagModuleName     string
+	flagModelsPkg      string
+	flagClearOutputDir bool
 )
 
 func main() {
@@ -26,6 +28,7 @@ func main() {
 	flag.StringVar(&flagOutputFile, "o", "./generated", "Where to output generated code, ./generated/ is default.")
 	flag.StringVar(&flagModuleName, "module", "", "The name of the module the generated code will be part of")
 	flag.StringVar(&flagModelsPkg, "pkg", "", "The name of the package that the GORM models are part of")
+	flag.BoolVar(&flagClearOutputDir, "clear", false, "If true, clears the contents of the output directory before generating new files")
 
 	flag.Parse()
 
@@ -49,27 +52,30 @@ func main() {
 	}
 
 	folderPath := flag.Arg(0)
-	if err := run(folderPath, flagOutputFile, flagModuleName, flagModelsPkg); err != nil {
+
+	cfg := config.NewConfig()
+
+	err := cfg.WithInputFolderPath(folderPath)
+	if err != nil {
+		errExit("Invalid input folder path: %v\n", folderPath)
+	}
+
+	err = cfg.WithOutputFile(flagOutputFile)
+	if err != nil {
+		errExit("Invalid output filepath: %v\n", flagOutputFile)
+	}
+
+	cfg.WithModuleName(flagModuleName)
+	cfg.WithModelPkg(flagModelsPkg)
+	cfg.WithClearOutputDir(flagClearOutputDir)
+
+	if err := run(cfg); err != nil {
 		errExit(err.Error())
 	}
 }
 
-func run(folderPath string, outputPath, moduleName, modelsPkgName string) error {
-	folderPath, err := filepath.Abs(folderPath)
-	if err != nil {
-		return err
-	}
-
-	outputPath, err = filepath.Abs(outputPath)
-	if err != nil {
-		return nil
-	}
-
-	// Check path exists and we have permission to read it
-	if _, err := os.Stat(folderPath); err != nil {
-		return err
-	}
-
+func run(cfg config.Config) error {
+	folderPath := cfg.InputFolderPath()
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {
 		return err
@@ -88,7 +94,12 @@ func run(folderPath string, outputPath, moduleName, modelsPkgName string) error 
 			return err
 		}
 
-		generator, err := generate.NewGenerator(outputPath, moduleName, modelsPkgName)
+		generator, err := generate.NewGenerator(
+			cfg.OutputFile(),
+			cfg.ModuleName(),
+			cfg.ModelsPkg(),
+			cfg.ClearOutputDir(),
+		)
 		if err != nil {
 			return err
 		}

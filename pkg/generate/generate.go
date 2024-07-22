@@ -25,14 +25,15 @@ type Generator interface {
 }
 
 type generator struct {
-	outputPath    string
-	moduleName    string
-	modelsPkgName string
+	outputPath     string
+	moduleName     string
+	modelsPkgName  string
+	clearOutputDir bool
 
 	relativePkgPath string
 }
 
-func NewGenerator(outputPath, moduleName, modelsPkgName string) (Generator, error) {
+func NewGenerator(outputPath, moduleName, modelsPkgName string, clearOutputDir bool) (Generator, error) {
 	modulePath, err := utils.FindGoMod(outputPath)
 	if err != nil {
 		return nil, err
@@ -47,6 +48,7 @@ func NewGenerator(outputPath, moduleName, modelsPkgName string) (Generator, erro
 		outputPath:      outputPath,
 		moduleName:      moduleName,
 		modelsPkgName:   modelsPkgName,
+		clearOutputDir:  clearOutputDir,
 		relativePkgPath: relPath,
 	}, nil
 }
@@ -58,9 +60,10 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	// TODO(joeriddles): notify user before deleting this path
-	if err := os.RemoveAll(g.outputPath); err != nil {
-		return err
+	if g.clearOutputDir {
+		if err := os.RemoveAll(g.outputPath); err != nil {
+			return err
+		}
 	}
 
 	if err := createDirs(
