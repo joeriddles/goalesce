@@ -45,7 +45,7 @@ func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model model.{{.model.Name}}
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
-	model := &model.User{}
+	model := &model.{{.model.Name}}{}
 	m.modelMapper.Map(obj, model)
 	return model, nil
 }
