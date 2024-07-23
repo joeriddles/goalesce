@@ -471,7 +471,8 @@ func toOpenApiType(t string) *OpenApiType {
 			format := "int64"
 			result = &OpenApiType{Type: "integer", Format: &format, Nullable: nullable}
 		case "float", "float64":
-			result = &OpenApiType{Type: "float", Nullable: nullable}
+			format := "float"
+			result = &OpenApiType{Type: "number", Format: &format, Nullable: nullable}
 		case "bool":
 			result = &OpenApiType{Type: "boolean", Nullable: nullable}
 		default:
