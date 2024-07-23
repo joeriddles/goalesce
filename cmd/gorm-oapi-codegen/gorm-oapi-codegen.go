@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
+	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/generate"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/parse"
 )
@@ -86,8 +87,9 @@ func run(cfg config.Config) error {
 	}
 
 	logger := log.Default()
-
 	parser := parse.NewParser(logger, cfg.AllowCustomModels())
+
+	metadatas := []*entity.GormModelMetadata{}
 	for _, entry := range entries {
 		filename := entry.Name()
 		if !strings.HasSuffix(filename, ".go") {
@@ -95,24 +97,26 @@ func run(cfg config.Config) error {
 		}
 
 		entryFilepath := filepath.Join(folderPath, filename)
-		metadatas, err := parser.Parse(entryFilepath)
+		metadatasForEntry, err := parser.Parse(entryFilepath)
 		if err != nil {
 			return err
 		}
 
-		generator, err := generate.NewGenerator(
-			logger,
-			cfg.OutputFile(),
-			cfg.ModuleName(),
-			cfg.ModelsPkg(),
-			cfg.ClearOutputDir(),
-		)
-		if err != nil {
-			return err
-		}
-		if err := generator.Generate(metadatas); err != nil {
-			return err
-		}
+		metadatas = append(metadatas, metadatasForEntry...)
+	}
+
+	generator, err := generate.NewGenerator(
+		logger,
+		cfg.OutputFile(),
+		cfg.ModuleName(),
+		cfg.ModelsPkg(),
+		cfg.ClearOutputDir(),
+	)
+	if err != nil {
+		return err
+	}
+	if err := generator.Generate(metadatas); err != nil {
+		return err
 	}
 
 	return nil
