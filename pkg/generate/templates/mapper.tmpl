@@ -14,14 +14,14 @@ type {{.model.Name}}Mapper interface {
 }
 
 type {{.model.Name|ToCamelCase}}Mapper struct {
-  modelMapper  Mapper
-	updateMapper Mapper
+  _modelMapper  _Mapper
+	_updateMapper _Mapper
 }
 
 func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
   return &{{.model.Name|ToCamelCase}}Mapper{
-    modelMapper:  NewModelMapper(),
-		updateMapper: NewUpdateMapper(),
+    _modelMapper:  _NewModelMapper(),
+		_updateMapper: _NewUpdateMapper(),
   }
 }
 

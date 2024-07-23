@@ -12,18 +12,18 @@ import (
 	"golang.org/x/text/language"
 )
 
-type Mapper interface {
+type _Mapper interface {
 	Map(from, to interface{}) error
 }
 
-type modelMapper struct{}
+type _modelMapper struct{}
 
-func NewModelMapper() Mapper {
-	return &modelMapper{}
+func _NewModelMapper() _Mapper {
+	return &_modelMapper{}
 }
 
 // Add properties from the request body to the model instance.
-func (m *modelMapper) Map(
+func (m *_modelMapper) Map(
 	body interface{},
 	model interface{},
 ) error {
@@ -43,14 +43,14 @@ func (m *modelMapper) Map(
 	return nil
 }
 
-type updateMapper struct{}
+type _updateMapper struct{}
 
-func NewUpdateMapper() Mapper {
-	return &updateMapper{}
+func _NewUpdateMapper() _Mapper {
+	return &_updateMapper{}
 }
 
 // Map an API request object to a GORM update with the correct column names.
-func (m *updateMapper) Map(
+func (m *_updateMapper) Map(
 	body interface{},
 	to interface{},
 ) error {
@@ -96,7 +96,7 @@ func convertBodyToUpdate(
 // The provided `value` type should match with the struct field being set.
 //
 // See https://github.com/oleiade/reflections/blob/master/reflections.go
-func (m *modelMapper) setField(obj interface{}, name string, value interface{}) error {
+func (m *_modelMapper) setField(obj interface{}, name string, value interface{}) error {
 	// Fetch the field reflect.Value
 	structValue := reflect.ValueOf(obj).Elem()
 	structFieldValue := structValue.FieldByName(name)
