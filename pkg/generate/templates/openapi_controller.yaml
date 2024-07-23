@@ -106,7 +106,7 @@ components:
           {{end}}{{end}}
         {{end}}
       required:
-        {{range .Fields}}- {{.Name|ToSnakeCase}}
+        {{range .Fields}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
         {{end}}
     Create{{.Name}}:
       type: object

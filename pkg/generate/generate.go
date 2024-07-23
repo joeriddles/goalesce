@@ -351,6 +351,7 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"MapToModelType": mapToModelType,
 		"MapToApiType":   mapToApiType,
 		"IsSimpleType":   isSimpleType,
+		"IsNullable":     isNullable,
 		"Not":            not,
 	}
 
@@ -433,9 +434,11 @@ func mapToApiType(field entity.GormModelField) string {
 // TODO(joeriddles): Refactor this monstrosity
 func toOpenApiType(t string) *OpenApiType {
 	var result *OpenApiType
+	nullable := false
 
 	if isPointer := strings.HasPrefix(t, "*"); isPointer {
 		t = t[1:]
+		nullable = true
 	} else if isArray := strings.HasPrefix(t, "[]"); isArray {
 		elemType := toOpenApiType(t[2:])
 		items := map[string]string{}
@@ -446,39 +449,40 @@ func toOpenApiType(t string) *OpenApiType {
 		}
 
 		result = &OpenApiType{
-			Type:  "array",
-			Items: &items,
+			Type:     "array",
+			Items:    &items,
+			Nullable: true,
 		}
 	}
 
 	if result == nil {
 		switch t {
 		case "string":
-			result = &OpenApiType{Type: "string"}
+			result = &OpenApiType{Type: "string", Nullable: nullable}
 		case "time.Time":
 			format := "date-time"
-			result = &OpenApiType{Type: "string", Format: &format}
+			result = &OpenApiType{Type: "string", Format: &format, Nullable: nullable}
 		case "gorm.DeletedAt":
 			format := "date-time"
 			result = &OpenApiType{Type: "string", Format: &format, Nullable: true}
 		case "int", "uint":
-			result = &OpenApiType{Type: "integer"}
+			result = &OpenApiType{Type: "integer", Nullable: nullable}
 		case "int64":
 			format := "int64"
-			result = &OpenApiType{Type: "integer", Format: &format}
+			result = &OpenApiType{Type: "integer", Format: &format, Nullable: nullable}
 		case "float", "float64":
-			result = &OpenApiType{Type: "float"}
+			result = &OpenApiType{Type: "float", Nullable: nullable}
 		case "bool":
-			result = &OpenApiType{Type: "boolean"}
+			result = &OpenApiType{Type: "boolean", Nullable: nullable}
 		default:
 			var typeRef *string = nil
 			if !isSimpleType(t) {
 				typeRefVal := fmt.Sprintf("./%v.gen.yaml#/components/schemas/%v", utils.ToSnakeCase(t), t)
 				typeRef = &typeRefVal
-				result = &OpenApiType{Type: t, Ref: typeRef}
+				result = &OpenApiType{Type: t, Ref: typeRef, Nullable: nullable}
 			} else {
 				// TODO(joeriddles): panic?
-				result = &OpenApiType{Type: t}
+				result = &OpenApiType{Type: t, Nullable: nullable}
 			}
 		}
 	}
@@ -495,6 +499,11 @@ func isSimpleType(t string) bool {
 
 func not(v bool) bool {
 	return !v
+}
+
+func isNullable(t string) bool {
+	openApiType := toOpenApiType(t)
+	return openApiType.Nullable
 }
 
 func createDirs(paths ...string) error {

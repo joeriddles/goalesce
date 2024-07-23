@@ -51,3 +51,18 @@ func Test_Custom(t *testing.T) {
 	err = run(cfg)
 	require.NoError(t, err)
 }
+
+func Test_Circular(t *testing.T) {
+	cfg := config.NewConfig()
+	err := cfg.WithInputFolderPath("../../examples/circular")
+	require.NoError(t, err)
+	err = cfg.WithOutputFile("./generated/circular")
+	require.NoError(t, err)
+	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
+	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/circular")
+	cfg.WithAllowCustomModels(true)
+	cfg.WithClearOutputDir(true)
+
+	err = run(cfg)
+	require.NoError(t, err)
+}
