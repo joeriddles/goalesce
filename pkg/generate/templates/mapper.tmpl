@@ -8,39 +8,51 @@ import (
 
 type {{.model.Name}}Mapper interface {
   MapToModel(obj {{.model.Name}}) (*model.{{.model.Name}}, error)
-  MapToApi(model{{.model.Name}} model.{{.model.Name}}) (*{{.model.Name}}, error)
+  MapToApi(model model.{{.model.Name}}) (*{{.model.Name}}, error)
   MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error)
   MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error)
 }
 
 type {{.model.Name|ToCamelCase}}Mapper struct {
+  modelMapper  Mapper
+	updateMapper Mapper
 }
 
 func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
-  return &{{.model.Name|ToCamelCase}}Mapper{}
+  return &{{.model.Name|ToCamelCase}}Mapper{
+    modelMapper:  NewModelMapper(),
+		updateMapper: NewUpdateMapper(),
+  }
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModel(obj {{.model.Name}}) (*model.{{.model.Name}}, error) {
   return &model.{{.model.Name}}{
     {{if .model.IsGormModelEmbedded}}Model: gorm.Model{
-      {{range .model.Fields}}{{if .IsGormModelEmbedded }}{{MapToType .}}{{end}}
+      {{range .model.Fields}}{{if .IsGormModelEmbedded }}{{MapToModelType .}}{{end}}
       {{end}}
     },
     {{end}}
-    {{range .model.Fields}}{{if Not .IsGormModelEmbedded }}{{MapToType .}}{{end}}
+    {{range .model.Fields}}{{if Not .IsGormModelEmbedded }}{{MapToModelType .}}{{end}}
     {{end}}
   }, nil
 }
 
-func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model{{.model.Name}} model.{{.model.Name}}) (*{{.model.Name}}, error) {
-  return nil, nil
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model model.{{.model.Name}}) (*{{.model.Name}}, error) {
+  return &{{.model.Name}}{
+    {{range .model.Fields}}{{MapToApiType .}}
+    {{end}}
+  }, nil
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
-  return nil, nil
+	model := &model.User{}
+	m.modelMapper.Map(obj, model)
+	return model, nil
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error) {
-  return nil, nil
+	update := &map[string]interface{}{}
+	m.updateMapper.Map(obj, update)
+	return *update, nil
 }
 

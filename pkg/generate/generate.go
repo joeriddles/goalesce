@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"embed"
 	"fmt"
-	"html/template"
 	"io/fs"
 	"log"
 	"os"
@@ -13,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/utils"
@@ -143,6 +143,9 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 	if err := g.generateMain(t); err != nil {
+		return err
+	}
+	if err := g.generateMapperUtil(t); err != nil {
 		return err
 	}
 
@@ -284,6 +287,16 @@ func (g *generator) generateMain(t *template.Template) error {
 	)
 }
 
+func (g *generator) generateMapperUtil(t *template.Template) error {
+	fp := filepath.Join(g.outputPath, "api", "mapper_util.go")
+	return g.generateGo(
+		t,
+		fp,
+		"mapper_util.tmpl",
+		map[string]interface{}{},
+	)
+}
+
 // Generate formatted Go code at the filepath with the template
 func (g *generator) generateGo(t *template.Template, fp string, template string, data any) error {
 	f, err := os.Create(fp)
@@ -307,9 +320,8 @@ func (g *generator) generateGo(t *template.Template, fp string, template string,
 	re := regexp.MustCompile("\n\\s+(\n\\s+)")
 	code = re.ReplaceAll(code, []byte("$1"))
 
-	code, err = imports.Process(fp, code, &imports.Options{
-		FormatOnly: true,
-	})
+	// Format and fix missing imports
+	code, err = imports.Process(fp, code, &imports.Options{})
 	if err != nil {
 		return err
 	}
@@ -331,14 +343,15 @@ func (g *generator) generateGo(t *template.Template, fp string, template string,
 // path of template is relative to the templates directory.
 func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 	funcMap := template.FuncMap{
-		"ToLower":       strings.ToLower,
-		"ToCamelCase":   utils.ToCamelCase,
-		"ToSnakeCase":   utils.ToSnakeCase,
-		"ToPascalCase":  utils.ToPascalCase,
-		"ToOpenApiType": toOpenApiType,
-		"MapToType":     mapToType,
-		"IsSimpleType":  isSimpleType,
-		"Not":           not,
+		"ToLower":        strings.ToLower,
+		"ToCamelCase":    utils.ToCamelCase,
+		"ToSnakeCase":    utils.ToSnakeCase,
+		"ToPascalCase":   utils.ToPascalCase,
+		"ToOpenApiType":  toOpenApiType,
+		"MapToModelType": mapToModelType,
+		"MapToApiType":   mapToApiType,
+		"IsSimpleType":   isSimpleType,
+		"Not":            not,
 	}
 
 	return fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {
@@ -378,23 +391,40 @@ type OpenApiType struct {
 	Nullable bool
 }
 
-// Map the
-func mapToType(field entity.GormModelField) string {
+// Map the model field to a type for mapping to a model
+func mapToModelType(field entity.GormModelField) string {
 	result := ""
-	objField := utils.ToPascalCase(field.Name)
+	apiField := utils.ToPascalCase(field.Name)
 
 	switch field.Type {
 	case "uint":
-		result = fmt.Sprintf("%v: uint(obj.%v),", field.Name, objField)
+		result = fmt.Sprintf("%v: uint(obj.%v),", field.Name, apiField)
 	case "gorm.DeletedAt":
-		result = fmt.Sprintf("%v: gorm.DeletedAt{Time: *obj.%v},", field.Name, objField)
+		result = fmt.Sprintf("%v: gorm.DeletedAt{Time: *obj.%v},", field.Name, apiField)
 	default:
 		if isSimpleType(field.Type) {
-			result = fmt.Sprintf("%v: obj.%v,", field.Name, objField)
+			result = fmt.Sprintf("%v: obj.%v,", field.Name, apiField)
 		} else {
 			// TODO(joeriddles): map complex types
 			result = ""
 		}
+	}
+
+	return result
+}
+
+// Map the model field to a type for mapping to an API model
+func mapToApiType(field entity.GormModelField) string {
+	result := ""
+	apiField := utils.ToPascalCase(field.Name)
+
+	switch field.Type {
+	case "uint":
+		result = fmt.Sprintf("%v: int(model.%v),", apiField, field.Name)
+	case "gorm.DeletedAt":
+		result = fmt.Sprintf("%v: func() *time.Time { if model.%v.Valid { return &model.%v.Time } else { return nil } }(),", apiField, field.Name, field.Name)
+	default:
+		result = fmt.Sprintf("%v: model.%v,", apiField, field.Name)
 	}
 
 	return result
