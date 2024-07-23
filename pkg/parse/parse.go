@@ -72,9 +72,18 @@ func (p *parser) parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, 
 	name := node.Name.Name
 	fields := p.parseGormModelFields(node)
 
+	isGormModelEmbedded := false
+	for _, field := range fields {
+		isGormModelEmbedded = isGormModelEmbedded || field.IsGormModelEmbedded
+		if isGormModelEmbedded {
+			break
+		}
+	}
+
 	metadata := &entity.GormModelMetadata{
-		Name:   name,
-		Fields: fields,
+		Name:                name,
+		IsGormModelEmbedded: isGormModelEmbedded,
+		Fields:              fields,
 	}
 	return metadata, nil
 }
@@ -93,10 +102,10 @@ func (p *parser) parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelFie
 
 					fields = append(
 						fields,
-						&entity.GormModelField{Name: "Model.ID", Type: "uint", Tag: &gormModelIdTag},
-						&entity.GormModelField{Name: "Model.CreatedAt", Type: "time.Time"},
-						&entity.GormModelField{Name: "Model.UpdatedAt", Type: "time.Time"},
-						&entity.GormModelField{Name: "Model.DeletedAt", Type: "gorm.DeletedAt", Tag: &gormModelDeletedAtTag},
+						&entity.GormModelField{Name: "ID", Type: "uint", Tag: &gormModelIdTag, IsGormModelEmbedded: true},
+						&entity.GormModelField{Name: "CreatedAt", Type: "time.Time", IsGormModelEmbedded: true},
+						&entity.GormModelField{Name: "UpdatedAt", Type: "time.Time", IsGormModelEmbedded: true},
+						&entity.GormModelField{Name: "DeletedAt", Type: "gorm.DeletedAt", Tag: &gormModelDeletedAtTag, IsGormModelEmbedded: true},
 					)
 				}
 				break

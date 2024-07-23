@@ -85,7 +85,9 @@ func run(cfg config.Config) error {
 		return err
 	}
 
-	parser := parse.NewParser(log.Default(), cfg.AllowCustomModels())
+	logger := log.Default()
+
+	parser := parse.NewParser(logger, cfg.AllowCustomModels())
 	for _, entry := range entries {
 		filename := entry.Name()
 		if !strings.HasSuffix(filename, ".go") {
@@ -99,6 +101,7 @@ func run(cfg config.Config) error {
 		}
 
 		generator, err := generate.NewGenerator(
+			logger,
 			cfg.OutputFile(),
 			cfg.ModuleName(),
 			cfg.ModelsPkg(),

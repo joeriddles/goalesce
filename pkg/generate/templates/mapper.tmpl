@@ -2,7 +2,7 @@
 package api
 
 import (
-	"gorm.io/gorm"
+	{{if .model.IsGormModelEmbedded}}"gorm.io/gorm"{{end}}
   model "{{.pkg}}"
 )
 
@@ -13,30 +13,34 @@ type {{.model.Name}}Mapper interface {
   MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error)
 }
 
-type _{{.model.Name}}Mapper struct {
+type {{.model.Name|ToCamelCase}}Mapper struct {
 }
 
 func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
-  return &_{{.model.Name}}Mapper{}
+  return &{{.model.Name|ToCamelCase}}Mapper{}
 }
 
-func (m *_{{.model.Name}}Mapper) MapToModel(obj {{.model.Name}}) (*model.{{.model.Name}}, error) {
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModel(obj {{.model.Name}}) (*model.{{.model.Name}}, error) {
   return &model.{{.model.Name}}{
-    Model: gorm.Model{ID: uint(obj.Id)},
-    {{range .Fields}}{{if IsSimpleType .Type}}{{.model.Name}}: {{if IsId .Name}}uint(obj.{{.model.Name|ToPascalCase}}){{else}}obj.{{.model.Name|ToPascalCase}}{{end}},{{end}}
+    {{if .model.IsGormModelEmbedded}}Model: gorm.Model{
+      {{range .model.Fields}}{{if .IsGormModelEmbedded }}{{MapToType .}}{{end}}
+      {{end}}
+    },
+    {{end}}
+    {{range .model.Fields}}{{if Not .IsGormModelEmbedded }}{{MapToType .}}{{end}}
     {{end}}
   }, nil
 }
 
-func (m *_{{.model.Name}}Mapper) MapToApi(model{{.model.Name}} model.{{.model.Name}}) (*{{.model.Name}}, error) {
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model{{.model.Name}} model.{{.model.Name}}) (*{{.model.Name}}, error) {
   return nil, nil
 }
 
-func (m *_{{.model.Name}}Mapper) MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
   return nil, nil
 }
 
-func (m *_{{.model.Name}}Mapper) MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error) {
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error) {
   return nil, nil
 }
 

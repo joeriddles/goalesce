@@ -2,19 +2,23 @@ package generate
 
 import (
 	"bufio"
+	"bytes"
 	"embed"
 	"fmt"
 	"html/template"
 	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
+	"golang.org/x/tools/imports"
 )
 
 //go:embed templates
@@ -25,6 +29,7 @@ type Generator interface {
 }
 
 type generator struct {
+	logger         *log.Logger
 	outputPath     string
 	moduleName     string
 	modelsPkgName  string
@@ -33,7 +38,7 @@ type generator struct {
 	relativePkgPath string
 }
 
-func NewGenerator(outputPath, moduleName, modelsPkgName string, clearOutputDir bool) (Generator, error) {
+func NewGenerator(logger *log.Logger, outputPath, moduleName, modelsPkgName string, clearOutputDir bool) (Generator, error) {
 	modulePath, err := utils.FindGoMod(outputPath)
 	if err != nil {
 		return nil, err
@@ -45,6 +50,7 @@ func NewGenerator(outputPath, moduleName, modelsPkgName string, clearOutputDir b
 	}
 
 	return &generator{
+		logger:          logger,
 		outputPath:      outputPath,
 		moduleName:      moduleName,
 		modelsPkgName:   modelsPkgName,
@@ -286,23 +292,37 @@ func (g *generator) generateGo(t *template.Template, fp string, template string,
 	}
 	defer f.Close()
 
-	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, template, data)
-	w.Flush()
+	// Write the template to in-memory buffer
+	var b bytes.Buffer
+	w := bufio.NewWriter(&b)
+	if err := t.ExecuteTemplate(w, template, data); err != nil {
+		return err
+	}
+	if err := w.Flush(); err != nil {
+		return err
+	}
 
-	// TODO(joeriddles): format Go files
-	// outBytes, err := imports.Process(filepath, nil, &imports.Options{
-	// 	FormatOnly: true,
-	// })
-	// if err != nil {
-	// 	return err
-	// }
+	// Format the code before saving to file
+	code := b.Bytes()
+	re := regexp.MustCompile("\n\\s+(\n\\s+)")
+	code = re.ReplaceAll(code, []byte("$1"))
 
-	// w = bufio.NewWriter(f)
-	// _, err = w.Write(outBytes)
-	// if err != nil {
-	// 	return err
-	// }
+	code, err = imports.Process(fp, code, &imports.Options{
+		FormatOnly: true,
+	})
+	if err != nil {
+		return err
+	}
+
+	// Write to file
+	w = bufio.NewWriter(f)
+	_, err = w.Write(code)
+	if err != nil {
+		return err
+	}
+	if err := w.Flush(); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -316,8 +336,8 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"ToSnakeCase":   utils.ToSnakeCase,
 		"ToPascalCase":  utils.ToPascalCase,
 		"ToOpenApiType": toOpenApiType,
+		"MapToType":     mapToType,
 		"IsSimpleType":  isSimpleType,
-		"IsId":          isId,
 		"Not":           not,
 	}
 
@@ -351,9 +371,33 @@ func runNpxCommand(command string, args ...string) (string, error) {
 }
 
 type OpenApiType struct {
-	Type  string
-	Ref   *string
-	Items *map[string]string
+	Type     string
+	Ref      *string
+	Items    *map[string]string
+	Format   *string
+	Nullable bool
+}
+
+// Map the
+func mapToType(field entity.GormModelField) string {
+	result := ""
+	objField := utils.ToPascalCase(field.Name)
+
+	switch field.Type {
+	case "uint":
+		result = fmt.Sprintf("%v: uint(obj.%v),", field.Name, objField)
+	case "gorm.DeletedAt":
+		result = fmt.Sprintf("%v: gorm.DeletedAt{Time: *obj.%v},", field.Name, objField)
+	default:
+		if isSimpleType(field.Type) {
+			result = fmt.Sprintf("%v: obj.%v,", field.Name, objField)
+		} else {
+			// TODO(joeriddles): map complex types
+			result = ""
+		}
+	}
+
+	return result
 }
 
 // TODO(joeriddles): Refactor this monstrosity
@@ -381,8 +425,19 @@ func toOpenApiType(t string) *OpenApiType {
 		switch t {
 		case "string":
 			result = &OpenApiType{Type: "string"}
+		case "time.Time":
+			format := "date-time"
+			result = &OpenApiType{Type: "string", Format: &format}
+		case "gorm.DeletedAt":
+			format := "date-time"
+			result = &OpenApiType{Type: "string", Format: &format, Nullable: true}
 		case "int", "uint":
 			result = &OpenApiType{Type: "integer"}
+		case "int64":
+			format := "int64"
+			result = &OpenApiType{Type: "integer", Format: &format}
+		case "bool":
+			result = &OpenApiType{Type: "boolean"}
 		default:
 			var typeRef *string = nil
 			if !isSimpleType(t) {
@@ -390,6 +445,7 @@ func toOpenApiType(t string) *OpenApiType {
 				typeRef = &typeRefVal
 				result = &OpenApiType{Type: t, Ref: typeRef}
 			} else {
+				// TODO(joeriddles): panic?
 				result = &OpenApiType{Type: t}
 			}
 		}
@@ -403,10 +459,6 @@ func isSimpleType(t string) bool {
 		return false // TODO(joeriddles) should this ever be empty?
 	}
 	return t[0:1] != strings.ToUpper(t[0:1])
-}
-
-func isId(name string) bool {
-	return strings.HasSuffix(strings.ToLower(name), "id")
 }
 
 func not(v bool) bool {

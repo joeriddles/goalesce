@@ -34,42 +34,42 @@ type {{.model.Name}}Repository interface {
   ) error
 }
 
-type _{{.model.Name}}Repository struct {
+type {{.model.Name|ToCamelCase}}Repository struct {
 }
 
 func New{{.model.Name}}Repository() {{.model.Name}}Repository {
-  return &_{{.model.Name}}Repository{}
+  return &{{.model.Name|ToCamelCase}}Repository{}
 }
 
-func (r *_{{.model.Name}}Repository) List(
+func (r *{{.model.Name|ToCamelCase}}Repository) List(
   ctx context.Context,
   filters any,
 ) ([]*model.{{.model.Name}}, error) {
   return nil, nil
 }
 
-func (r *_{{.model.Name}}Repository) Get(
+func (r *{{.model.Name|ToCamelCase}}Repository) Get(
   ctx context.Context,
   id int64,
 ) (*model.{{.model.Name}}, error) {
   return nil, nil
 }
 
-func (r *_{{.model.Name}}Repository) Create(
+func (r *{{.model.Name|ToCamelCase}}Repository) Create(
   ctx context.Context,
   {{.model.Name|ToCamelCase}} model.{{.model.Name}},
 ) error {
   return nil
 }
 
-func (r *_{{.model.Name}}Repository) Update(
+func (r *{{.model.Name|ToCamelCase}}Repository) Update(
   ctx context.Context,
   update map[string]interface{},
 ) error {
   return nil
 }
 
-func (r *_{{.model.Name}}Repository) Delete(
+func (r *{{.model.Name|ToCamelCase}}Repository) Delete(
   ctx context.Context,
   id int64,
 ) error {

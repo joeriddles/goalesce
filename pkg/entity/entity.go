@@ -1,12 +1,14 @@
 package entity
 
 type GormModelMetadata struct {
-	Name   string
-	Fields []*GormModelField
+	Name                string
+	IsGormModelEmbedded bool
+	Fields              []*GormModelField
 }
 
 type GormModelField struct {
-	Name string
-	Type string
-	Tag  *string
+	Name                string
+	Type                string
+	IsGormModelEmbedded bool
+	Tag                 *string
 }

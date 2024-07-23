@@ -7,6 +7,8 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+// TODO(joeriddles): assert golden files
+
 func Test_Basic(t *testing.T) {
 	cfg := config.NewConfig()
 	err := cfg.WithInputFolderPath("../../examples/basic")

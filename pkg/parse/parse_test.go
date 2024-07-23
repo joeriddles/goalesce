@@ -21,7 +21,8 @@ func TestParse_Basic(t *testing.T) {
 	expectedNameTag := "`gorm:\"column:name;\"`"
 
 	expected := &entity.GormModelMetadata{
-		Name: "User",
+		Name:                "User",
+		IsGormModelEmbedded: true,
 		Fields: []*entity.GormModelField{
 			{
 				Name: "Model.ID",
@@ -62,7 +63,8 @@ func TestParse_Cars(t *testing.T) {
 	expectedDeletedAtTag := "`gorm:\"index\"`"
 
 	expectedManufacturer := &entity.GormModelMetadata{
-		Name: "Manufacturer",
+		Name:                "Manufacturer",
+		IsGormModelEmbedded: true,
 		Fields: []*entity.GormModelField{
 			{
 				Name: "Model.ID",
@@ -94,7 +96,8 @@ func TestParse_Cars(t *testing.T) {
 	}
 	expectedModelPartsTag := "`gorm:\"many2many:vehicle_parts;\"`"
 	expectedModel := &entity.GormModelMetadata{
-		Name: "Model",
+		Name:                "Model",
+		IsGormModelEmbedded: true,
 		Fields: []*entity.GormModelField{
 			{
 				Name: "Model.ID",
@@ -162,7 +165,8 @@ func TestParse_Custom(t *testing.T) {
 	expectedDeletedAtTag := "`gorm:\"column:deleted_at;type:timestamp with time zone\" json:\"deleted_at\"`"
 
 	expected := &entity.GormModelMetadata{
-		Name: "Custom",
+		Name:                "Custom",
+		IsGormModelEmbedded: false,
 		Fields: []*entity.GormModelField{
 			{
 				Name: "ID",
