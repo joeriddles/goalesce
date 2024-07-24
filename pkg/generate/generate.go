@@ -344,6 +344,7 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"ToLower":        strings.ToLower,
 		"ToCamelCase":    utils.ToCamelCase,
 		"ToSnakeCase":    utils.ToSnakeCase,
+		"ToHtmlCase":     utils.ToHtmlCase,
 		"ToPascalCase":   utils.ToPascalCase,
 		"ToOpenApiType":  toOpenApiType,
 		"MapToModelType": mapToModelType,

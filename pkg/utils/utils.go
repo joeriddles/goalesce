@@ -44,6 +44,12 @@ func ToSnakeCase(s string) string {
 	return strings.ToLower(snake)
 }
 
+// Convert the string to html-case.
+func ToHtmlCase(s string) string {
+	snakeCase := ToSnakeCase(s)
+	return strings.ReplaceAll(snakeCase, "_", "-")
+}
+
 // Convert the string to PascalCase.
 func ToPascalCase(s string) string {
 	if len(s) == 0 {
