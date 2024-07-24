@@ -17,6 +17,7 @@ type Config struct {
 	ClearOutputDir    bool                   `yaml:"clear_output_dir"`
 	AllowCustomModels bool                   `yaml:"allow_custom_models"`
 	PruneYaml         bool                   `yaml:"prune_yaml"`
+	OpenApiFile       string                 `yaml:"openapi_file"`
 	ServerCodegen     *codegen.Configuration `yaml:"server_codegen,omitempty"`
 	ModelsCodegen     *codegen.Configuration `yaml:"models_codegen,omitempty"`
 }
@@ -52,6 +53,13 @@ func (o *Config) Validate() error {
 	o.OutputFile, err = filepath.Abs(o.OutputFile)
 	if err != nil {
 		return err
+	}
+
+	if o.OpenApiFile != "" {
+		o.OpenApiFile, err = filepath.Abs(o.OpenApiFile)
+		if err != nil {
+			return err
+		}
 	}
 
 	if o.ModelsCodegen == nil {

@@ -3,6 +3,7 @@ package generate
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"embed"
 	"fmt"
 	"io/fs"
@@ -14,12 +15,14 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 	"golang.org/x/tools/imports"
+	"gopkg.in/yaml.v2"
 )
 
 //go:embed templates
@@ -182,17 +185,51 @@ func (g *generator) combineOpenApiFiles() error {
 }
 
 func (g *generator) generateOpenApiBase(t *template.Template, metadatas []*entity.GormModelMetadata) error {
-	fp := filepath.Join(g.outputPath, "openapi_base.gen.yaml")
-	f, err := os.Create(fp)
-	if err != nil {
-		return err
+	if g.cfg.OpenApiFile != "" {
+		loader := openapi3.NewLoader()
+		doc, err := loader.LoadFromFile(g.cfg.OpenApiFile)
+		if err != nil {
+			return err
+		}
+
+		for _, metadata := range metadatas {
+			doc.Paths.Set(fmt.Sprintf("/%v/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
+				Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1", utils.ToSnakeCase(metadata.Name)),
+			})
+			doc.Paths.Set(fmt.Sprintf("/%v/{id}/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
+				Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1%%7Bid%%7D~1", utils.ToSnakeCase(metadata.Name)),
+			})
+		}
+
+		if err := doc.Paths.Validate(context.Background()); err != nil {
+			return err
+		}
+
+		yamlContent, err := yaml.Marshal(doc)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.Create(g.cfg.OpenApiFile)
+		if err != nil {
+			return err
+		}
+
+		if _, err = f.Write(yamlContent); err != nil {
+			return err
+		}
+	} else {
+		fp := filepath.Join(g.outputPath, "openapi_base.gen.yaml")
+		f, err := os.Create(fp)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		w := bufio.NewWriter(f)
+		t.ExecuteTemplate(w, "openapi_base.yaml", metadatas)
+		w.Flush()
 	}
-	defer f.Close()
-
-	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "openapi_base.yaml", metadatas)
-	w.Flush()
-
 	return nil
 }
 

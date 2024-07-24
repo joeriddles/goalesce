@@ -1,0 +1,12 @@
+openapi: 3.0.3
+info:
+  title: Hello YAML
+  version: 1.0.0
+  description: A simple CRUD API made Go
+paths:
+  /:
+    get:
+      summary: Get 'em
+      responses:
+        200:
+          description: OK

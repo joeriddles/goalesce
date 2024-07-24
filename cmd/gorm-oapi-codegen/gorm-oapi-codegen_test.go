@@ -91,3 +91,18 @@ func Test_GenerateEcho(t *testing.T) {
 	err := run(cfg)
 	require.NoError(t, err)
 }
+
+func Test_GenerateExistingYaml(t *testing.T) {
+	cfg := &config.Config{
+		InputFolderPath: "../../examples/yaml",
+		OutputFile:      "./generated/yaml",
+		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
+		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/yaml",
+		ClearOutputDir:  true,
+		PruneYaml:       true,
+		OpenApiFile:     "../../examples/yaml/openapi.yaml",
+	}
+	require.NoError(t, cfg.Validate())
+	err := run(cfg)
+	require.NoError(t, err)
+}
