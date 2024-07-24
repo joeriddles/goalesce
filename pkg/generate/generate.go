@@ -288,7 +288,7 @@ func (g *generator) generateMain(t *template.Template) error {
 }
 
 func (g *generator) generateMapperUtil(t *template.Template) error {
-	fp := filepath.Join(g.outputPath, "api", "mapper_util.go")
+	fp := filepath.Join(g.outputPath, "api", "mapper_util.gen.go")
 	return g.generateGo(
 		t,
 		fp,
@@ -351,6 +351,7 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"MapToModelType": mapToModelType,
 		"MapToApiType":   mapToApiType,
 		"IsSimpleType":   isSimpleType,
+		"IsComplexType":  isComplexType,
 		"IsNullable":     isNullable,
 		"Not":            not,
 	}
@@ -491,11 +492,15 @@ func toOpenApiType(t string) *OpenApiType {
 	return result
 }
 
-func isSimpleType(t string) bool {
+func isComplexType(t string) bool {
 	if t == "" {
-		return false // TODO(joeriddles) should this ever be empty?
+		return false
 	}
-	return t[0:1] != strings.ToUpper(t[0:1])
+	return strings.HasPrefix(t, "*") || !strings.HasPrefix(t, "[]") || t[0:1] != strings.ToUpper(t[0:1])
+}
+
+func isSimpleType(t string) bool {
+	return !isComplexType(t)
 }
 
 func not(v bool) bool {

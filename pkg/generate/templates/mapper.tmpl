@@ -4,6 +4,7 @@ package api
 import (
 	{{if .model.IsGormModelEmbedded}}"gorm.io/gorm"{{end}}
   model "{{.pkg}}"
+  "github.com/joeriddles/gorm-oapi-codegen/pkg/automapper"
 )
 
 type {{.model.Name}}Mapper interface {
@@ -14,43 +15,40 @@ type {{.model.Name}}Mapper interface {
 }
 
 type {{.model.Name|ToCamelCase}}Mapper struct {
-  _modelMapper  _Mapper
-	_updateMapper _Mapper
+  automapper   automapper.AutoMapper[model.{{.model.Name}}, {{.model.Name}}]
+  modelMapper  _Mapper
+	updateMapper _Mapper
 }
 
 func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
   return &{{.model.Name|ToCamelCase}}Mapper{
-    _modelMapper:  _NewModelMapper(),
-		_updateMapper: _NewUpdateMapper(),
+    automapper:   automapper.NewAutoMapper(model.{{.model.Name}}{}, {{.model.Name}}{}),
+    modelMapper:  _NewModelMapper(),
+		updateMapper: _NewUpdateMapper(),
   }
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModel(obj {{.model.Name}}) (*model.{{.model.Name}}, error) {
-  return &model.{{.model.Name}}{
-    {{if .model.IsGormModelEmbedded}}Model: gorm.Model{
-      {{range .model.Fields}}{{if .IsGormModelEmbedded }}{{MapToModelType .}}{{end}}
-      {{end}}
-    },
-    {{end}}
-    {{range .model.Fields}}{{if Not .IsGormModelEmbedded }}{{MapToModelType .}}{{end}}
-    {{end}}
-  }, nil
+  model := &model.{{.model.Name}}{}
+	err := m.automapper.MapFrom(&obj, model)
+	return model, err
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model model.{{.model.Name}}) (*{{.model.Name}}, error) {
-  return &{{.model.Name}}{
-    {{range .model.Fields}}{{MapToApiType .}}
-    {{end}}
-  }, nil
+  result := &{{.model.Name}}{}
+	err := m.automapper.MapTo(&model, result)
+	return result, err
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
+  // TODO: use automapper
 	model := &model.{{.model.Name}}{}
 	m.modelMapper.Map(obj, model)
 	return model, nil
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj Update{{.model.Name}}) (map[string]interface{}, error) {
+// TODO: use automapper
 	update := &map[string]interface{}{}
 	m.updateMapper.Map(obj, update)
 	return *update, nil
