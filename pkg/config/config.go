@@ -5,16 +5,19 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 )
 
 type Config struct {
-	InputFolderPath   string `yaml:"input_folder_path"`
-	OutputFile        string `yaml:"output_file_path"`
-	ModuleName        string `yaml:"module_name"`
-	ModelsPkg         string `yaml:"models_package"`
-	ClearOutputDir    bool   `yaml:"clear_output_dir"`
-	AllowCustomModels bool   `yaml:"allow_custom_models"`
-	PruneYaml         bool   `yaml:"prune_yaml"`
+	InputFolderPath   string                 `yaml:"input_folder_path"`
+	OutputFile        string                 `yaml:"output_file_path"`
+	ModuleName        string                 `yaml:"module_name"`
+	ModelsPkg         string                 `yaml:"models_package"`
+	ClearOutputDir    bool                   `yaml:"clear_output_dir"`
+	AllowCustomModels bool                   `yaml:"allow_custom_models"`
+	PruneYaml         bool                   `yaml:"prune_yaml"`
+	OapiCodegen       *codegen.Configuration `yaml:"oapi_codegen,omitempty"`
 }
 
 func (o *Config) Validate() error {
@@ -48,6 +51,13 @@ func (o *Config) Validate() error {
 	o.OutputFile, err = filepath.Abs(o.OutputFile)
 	if err != nil {
 		return err
+	}
+
+	if o.OapiCodegen == nil {
+		o.OapiCodegen = &codegen.Configuration{
+			PackageName: "api",
+			Generate:    codegen.GenerateOptions{Models: true},
+		}
 	}
 
 	return nil

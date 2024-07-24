@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "debug cars",
+      "name": "debug cars (yaml)",
       "type": "go",
       "request": "launch",
       "mode": "auto",
@@ -10,6 +10,17 @@
       "args": [
         "-config",
         "${workspaceFolder}/examples/cars/config.yaml",
+      ],
+    },
+    {
+      "name": "debug cars (yaml alt)",
+      "type": "go",
+      "request": "launch",
+      "mode": "auto",
+      "program": "./cmd/gorm-oapi-codegen/gorm-oapi-codegen.go",
+      "args": [
+        "-config",
+        "${workspaceFolder}/examples/cars/config_with_codegen.yaml",
       ],
     }
   ]

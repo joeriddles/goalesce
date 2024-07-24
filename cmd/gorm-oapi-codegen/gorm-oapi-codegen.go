@@ -85,12 +85,12 @@ func main() {
 		errExit("configuration error: %v\n", err)
 	}
 
-	if err := run(*cfg); err != nil {
+	if err := run(cfg); err != nil {
 		errExit(err.Error())
 	}
 }
 
-func run(cfg config.Config) error {
+func run(cfg *config.Config) error {
 	folderPath := cfg.InputFolderPath
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {

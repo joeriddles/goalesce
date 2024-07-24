@@ -31,12 +31,12 @@ type Generator interface {
 
 type generator struct {
 	logger          *log.Logger
-	cfg             config.Config
+	cfg             *config.Config
 	outputPath      string
 	relativePkgPath string
 }
 
-func NewGenerator(logger *log.Logger, cfg config.Config) (Generator, error) {
+func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 	outputPath := cfg.OutputFile
 	modulePath, err := utils.FindGoMod(outputPath)
 	if err != nil {
@@ -98,7 +98,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	}
 
 	code, err := codegen.Generate(swagger, codegen.Configuration{
-		PackageName: "api",
+		PackageName: g.cfg.OapiCodegen.PackageName,
 		Generate:    codegen.GenerateOptions{Models: true},
 	})
 	if err != nil {
@@ -109,7 +109,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	}
 
 	code, err = codegen.Generate(swagger, codegen.Configuration{
-		PackageName: "api",
+		PackageName: g.cfg.OapiCodegen.PackageName,
 		Generate: codegen.GenerateOptions{
 			StdHTTPServer: true,
 			Strict:        true,
@@ -230,6 +230,7 @@ func (g *generator) generateController(t *template.Template, metadata *entity.Go
 		fp,
 		"controller.tmpl",
 		map[string]interface{}{
+			"package":              g.cfg.OapiCodegen.PackageName,
 			"repositoryImportPath": repositoryImportPath,
 			"model":                metadata,
 		},
@@ -242,7 +243,10 @@ func (g *generator) generateServer(t *template.Template, metadatas []*entity.Gor
 		t,
 		fp,
 		"server.tmpl",
-		metadatas,
+		map[string]interface{}{
+			"package":   g.cfg.OapiCodegen.PackageName,
+			"metadatas": metadatas,
+		},
 	)
 }
 
@@ -266,8 +270,9 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 		fp,
 		"mapper.tmpl",
 		map[string]interface{}{
-			"pkg":   g.cfg.ModelsPkg,
-			"model": metadata,
+			"package": g.cfg.OapiCodegen.PackageName,
+			"pkg":     g.cfg.ModelsPkg,
+			"model":   metadata,
 		},
 	)
 }
@@ -291,7 +296,9 @@ func (g *generator) generateMapperUtil(t *template.Template) error {
 		t,
 		fp,
 		"mapper_util.tmpl",
-		map[string]interface{}{},
+		map[string]interface{}{
+			"package": g.cfg.OapiCodegen.PackageName,
+		},
 	)
 }
 

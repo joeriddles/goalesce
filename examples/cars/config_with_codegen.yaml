@@ -1,0 +1,7 @@
+input_folder_path: "../../examples/cars"
+output_file_path: "./generated/cars"
+module_name: "github.com/joeriddles/gorm-oapi-codegen"
+models_package: "github.com/joeriddles/gorm-oapi-codegen/examples/cars"
+clear_output_dir: true
+oapi_codegen:
+  package: alt

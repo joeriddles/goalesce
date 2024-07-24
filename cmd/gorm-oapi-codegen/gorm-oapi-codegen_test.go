@@ -18,7 +18,7 @@ func Test_Basic(t *testing.T) {
 		ClearOutputDir:  true,
 	}
 	require.NoError(t, cfg.Validate())
-	err := run(*cfg)
+	err := run(cfg)
 	require.NoError(t, err)
 }
 
@@ -31,7 +31,7 @@ func Test_Cars(t *testing.T) {
 		ClearOutputDir:  true,
 	}
 	require.NoError(t, cfg.Validate())
-	err := run(*cfg)
+	err := run(cfg)
 	require.NoError(t, err)
 }
 
@@ -45,7 +45,7 @@ func Test_Custom(t *testing.T) {
 		ClearOutputDir:    true,
 	}
 	require.NoError(t, cfg.Validate())
-	err := run(*cfg)
+	err := run(cfg)
 	require.NoError(t, err)
 }
 
@@ -59,6 +59,6 @@ func Test_Circular(t *testing.T) {
 		ClearOutputDir:    true,
 	}
 	require.NoError(t, cfg.Validate())
-	err := run(*cfg)
+	err := run(cfg)
 	require.NoError(t, err)
 }
