@@ -97,10 +97,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	code, err := codegen.Generate(swagger, codegen.Configuration{
-		PackageName: g.cfg.OapiCodegen.PackageName,
-		Generate:    codegen.GenerateOptions{Models: true},
-	})
+	code, err := codegen.Generate(swagger, *g.cfg.ModelsCodegen)
 	if err != nil {
 		return err
 	}
@@ -108,15 +105,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	code, err = codegen.Generate(swagger, codegen.Configuration{
-		PackageName: g.cfg.OapiCodegen.PackageName,
-		Generate: codegen.GenerateOptions{
-			StdHTTPServer: true,
-			Strict:        true,
-			EmbeddedSpec:  true,
-		},
-	})
-
+	code, err = codegen.Generate(swagger, *g.cfg.ServerCodegen)
 	if err != nil {
 		return err
 	}
@@ -225,12 +214,18 @@ func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity
 func (g *generator) generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
 	fp := filepath.Join(g.outputPath, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
 	repositoryImportPath := filepath.Join(g.cfg.ModuleName, g.relativePkgPath, "repository")
+
+	template := "controller.tmpl"
+	if g.cfg.ServerCodegen.Generate.EchoServer {
+		template = "echo_controller.tmpl"
+	}
+
 	return g.generateGo(
 		t,
 		fp,
-		"controller.tmpl",
+		template,
 		map[string]interface{}{
-			"package":              g.cfg.OapiCodegen.PackageName,
+			"package":              g.cfg.ServerCodegen.PackageName,
 			"repositoryImportPath": repositoryImportPath,
 			"model":                metadata,
 		},
@@ -239,12 +234,18 @@ func (g *generator) generateController(t *template.Template, metadata *entity.Go
 
 func (g *generator) generateServer(t *template.Template, metadatas []*entity.GormModelMetadata) error {
 	fp := filepath.Join(g.outputPath, "api", "server.gen.go")
+
+	template := "server.tmpl"
+	if g.cfg.ServerCodegen.Generate.EchoServer {
+		template = "echo_server.tmpl"
+	}
+
 	return g.generateGo(
 		t,
 		fp,
-		"server.tmpl",
+		template,
 		map[string]interface{}{
-			"package":   g.cfg.OapiCodegen.PackageName,
+			"package":   g.cfg.ServerCodegen.PackageName,
 			"metadatas": metadatas,
 		},
 	)
@@ -270,7 +271,7 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 		fp,
 		"mapper.tmpl",
 		map[string]interface{}{
-			"package": g.cfg.OapiCodegen.PackageName,
+			"package": g.cfg.ServerCodegen.PackageName,
 			"pkg":     g.cfg.ModelsPkg,
 			"model":   metadata,
 		},
@@ -297,7 +298,7 @@ func (g *generator) generateMapperUtil(t *template.Template) error {
 		fp,
 		"mapper_util.tmpl",
 		map[string]interface{}{
-			"package": g.cfg.OapiCodegen.PackageName,
+			"package": g.cfg.ServerCodegen.PackageName,
 		},
 	)
 }

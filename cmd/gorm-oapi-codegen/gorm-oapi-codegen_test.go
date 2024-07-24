@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
+	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/stretchr/testify/require"
 )
 
@@ -57,6 +58,34 @@ func Test_Circular(t *testing.T) {
 		ModelsPkg:         "github.com/joeriddles/gorm-oapi-codegen/examples/circular",
 		AllowCustomModels: true,
 		ClearOutputDir:    true,
+	}
+	require.NoError(t, cfg.Validate())
+	err := run(cfg)
+	require.NoError(t, err)
+}
+
+func Test_GenerateEcho(t *testing.T) {
+	cfg := &config.Config{
+		InputFolderPath: "../../examples/cars",
+		OutputFile:      "./generated/echo",
+		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
+		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/cars",
+		ClearOutputDir:  true,
+		PruneYaml:       true,
+		ModelsCodegen: &codegen.Configuration{
+			PackageName: "api",
+			Generate: codegen.GenerateOptions{
+				Models: true,
+			},
+		},
+		ServerCodegen: &codegen.Configuration{
+			PackageName: "api",
+			Generate: codegen.GenerateOptions{
+				EchoServer:   true,
+				Strict:       true,
+				EmbeddedSpec: true,
+			},
+		},
 	}
 	require.NoError(t, cfg.Validate())
 	err := run(cfg)

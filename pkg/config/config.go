@@ -17,7 +17,8 @@ type Config struct {
 	ClearOutputDir    bool                   `yaml:"clear_output_dir"`
 	AllowCustomModels bool                   `yaml:"allow_custom_models"`
 	PruneYaml         bool                   `yaml:"prune_yaml"`
-	OapiCodegen       *codegen.Configuration `yaml:"oapi_codegen,omitempty"`
+	ServerCodegen     *codegen.Configuration `yaml:"server_codegen,omitempty"`
+	ModelsCodegen     *codegen.Configuration `yaml:"models_codegen,omitempty"`
 }
 
 func (o *Config) Validate() error {
@@ -53,10 +54,21 @@ func (o *Config) Validate() error {
 		return err
 	}
 
-	if o.OapiCodegen == nil {
-		o.OapiCodegen = &codegen.Configuration{
+	if o.ModelsCodegen == nil {
+		o.ModelsCodegen = &codegen.Configuration{
 			PackageName: "api",
 			Generate:    codegen.GenerateOptions{Models: true},
+		}
+	}
+
+	if o.ServerCodegen == nil {
+		o.ServerCodegen = &codegen.Configuration{
+			PackageName: "api",
+			Generate: codegen.GenerateOptions{
+				StdHTTPServer: true,
+				Strict:        true,
+				EmbeddedSpec:  true,
+			},
 		}
 	}
 
