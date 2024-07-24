@@ -22,6 +22,7 @@ var (
 	flagModelsPkg         string
 	flagClearOutputDir    bool
 	flagAllowCustomModels bool
+	flagPruneYaml         bool
 )
 
 func main() {
@@ -33,6 +34,7 @@ func main() {
 	flag.StringVar(&flagModelsPkg, "pkg", "", "The name of the package that the GORM models are part of")
 	flag.BoolVar(&flagClearOutputDir, "clear", false, "If true, clears the contents of the output directory before generating new files")
 	flag.BoolVar(&flagAllowCustomModels, "custom", false, "If true, parses classes that do not inherit from gorm.Model")
+	flag.BoolVar(&flagPruneYaml, "prune", false, "If true, deletes all model specific YAML files after combining them into a single YAML file")
 
 	flag.Parse()
 
@@ -73,6 +75,7 @@ func main() {
 	cfg.WithModelPkg(flagModelsPkg)
 	cfg.WithClearOutputDir(flagClearOutputDir)
 	cfg.WithAllowCustomModels(flagAllowCustomModels)
+	cfg.WithPruneYaml(flagPruneYaml)
 
 	if err := run(cfg); err != nil {
 		errExit(err.Error())
@@ -105,13 +108,7 @@ func run(cfg config.Config) error {
 		metadatas = append(metadatas, metadatasForEntry...)
 	}
 
-	generator, err := generate.NewGenerator(
-		logger,
-		cfg.OutputFile(),
-		cfg.ModuleName(),
-		cfg.ModelsPkg(),
-		cfg.ClearOutputDir(),
-	)
+	generator, err := generate.NewGenerator(logger, cfg)
 	if err != nil {
 		return err
 	}

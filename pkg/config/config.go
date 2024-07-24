@@ -12,6 +12,7 @@ type Config interface {
 	ModelsPkg() string
 	ClearOutputDir() bool
 	AllowCustomModels() bool
+	PruneYaml() bool
 
 	WithInputFolderPath(value string) error
 	WithOutputFile(value string) error
@@ -19,6 +20,7 @@ type Config interface {
 	WithModelPkg(value string)
 	WithClearOutputDir(value bool)
 	WithAllowCustomModels(value bool)
+	WithPruneYaml(value bool)
 }
 
 var _ Config = &config{}
@@ -30,6 +32,7 @@ type config struct {
 	modelsPkg         string
 	clearOutputDir    bool
 	allowCustomModels bool
+	pruneYaml         bool
 }
 
 func NewConfig() *config {
@@ -58,6 +61,10 @@ func (c *config) OutputFile() string {
 
 func (c *config) AllowCustomModels() bool {
 	return c.allowCustomModels
+}
+
+func (c *config) PruneYaml() bool {
+	return c.pruneYaml
 }
 
 func (c *config) WithInputFolderPath(value string) error {
@@ -97,4 +104,8 @@ func (c *config) WithClearOutputDir(value bool) {
 
 func (c *config) WithAllowCustomModels(value bool) {
 	c.allowCustomModels = value
+}
+
+func (c *config) WithPruneYaml(value bool) {
+	c.pruneYaml = value
 }

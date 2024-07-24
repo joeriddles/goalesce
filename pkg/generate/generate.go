@@ -14,6 +14,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
@@ -29,16 +30,14 @@ type Generator interface {
 }
 
 type generator struct {
-	logger         *log.Logger
-	outputPath     string
-	moduleName     string
-	modelsPkgName  string
-	clearOutputDir bool
-
+	logger          *log.Logger
+	cfg             config.Config
+	outputPath      string
 	relativePkgPath string
 }
 
-func NewGenerator(logger *log.Logger, outputPath, moduleName, modelsPkgName string, clearOutputDir bool) (Generator, error) {
+func NewGenerator(logger *log.Logger, cfg config.Config) (Generator, error) {
+	outputPath := cfg.OutputFile()
 	modulePath, err := utils.FindGoMod(outputPath)
 	if err != nil {
 		return nil, err
@@ -51,10 +50,8 @@ func NewGenerator(logger *log.Logger, outputPath, moduleName, modelsPkgName stri
 
 	return &generator{
 		logger:          logger,
+		cfg:             cfg,
 		outputPath:      outputPath,
-		moduleName:      moduleName,
-		modelsPkgName:   modelsPkgName,
-		clearOutputDir:  clearOutputDir,
 		relativePkgPath: relPath,
 	}, nil
 }
@@ -66,7 +63,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	if g.clearOutputDir {
+	if g.cfg.ClearOutputDir() {
 		if err := os.RemoveAll(g.outputPath); err != nil {
 			return err
 		}
@@ -177,16 +174,17 @@ func (g *generator) combineOpenApiFiles() error {
 		return err
 	}
 
-	// TODO(joeriddles): add --prune option to CLI
-	entries, err := os.ReadDir(g.outputPath)
-	if err != nil {
-		return err
-	}
-	for _, entry := range entries {
-		filename := entry.Name()
-		if strings.HasSuffix(filename, ".yaml") && filename != "openapi.yaml" {
-			if err := os.Remove(filepath.Join(g.outputPath, filename)); err != nil {
-				return err
+	if g.cfg.PruneYaml() {
+		entries, err := os.ReadDir(g.outputPath)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			filename := entry.Name()
+			if strings.HasSuffix(filename, ".yaml") && filename != "openapi.yaml" {
+				if err := os.Remove(filepath.Join(g.outputPath, filename)); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -226,7 +224,7 @@ func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity
 
 func (g *generator) generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
 	fp := filepath.Join(g.outputPath, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
-	repositoryImportPath := filepath.Join(g.moduleName, g.relativePkgPath, "repository")
+	repositoryImportPath := filepath.Join(g.cfg.ModuleName(), g.relativePkgPath, "repository")
 	return g.generateGo(
 		t,
 		fp,
@@ -255,7 +253,7 @@ func (g *generator) generateRepository(t *template.Template, metadata *entity.Go
 		fp,
 		"repository.tmpl",
 		map[string]interface{}{
-			"pkg":   g.modelsPkgName,
+			"pkg":   g.cfg.ModelsPkg(),
 			"model": metadata,
 		},
 	)
@@ -268,7 +266,7 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 		fp,
 		"mapper.tmpl",
 		map[string]interface{}{
-			"pkg":   g.modelsPkgName,
+			"pkg":   g.cfg.ModelsPkg(),
 			"model": metadata,
 		},
 	)
@@ -276,7 +274,7 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 
 func (g *generator) generateMain(t *template.Template) error {
 	fp := filepath.Join(g.outputPath, "main.go")
-	apiImportPath := filepath.Join(g.moduleName, g.relativePkgPath, "api")
+	apiImportPath := filepath.Join(g.cfg.ModuleName(), g.relativePkgPath, "api")
 	return g.generateGo(
 		t,
 		fp,
