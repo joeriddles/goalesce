@@ -185,6 +185,13 @@ func (g *generator) combineOpenApiFiles() error {
 }
 
 func (g *generator) generateOpenApiBase(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+	fp := filepath.Join(g.outputPath, "openapi_base.gen.yaml")
+	f, err := os.Create(fp)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
 	if g.cfg.OpenApiFile != "" {
 		loader := openapi3.NewLoader()
 		doc, err := loader.LoadFromFile(g.cfg.OpenApiFile)
@@ -210,22 +217,10 @@ func (g *generator) generateOpenApiBase(t *template.Template, metadatas []*entit
 			return err
 		}
 
-		f, err := os.Create(g.cfg.OpenApiFile)
-		if err != nil {
-			return err
-		}
-
 		if _, err = f.Write(yamlContent); err != nil {
 			return err
 		}
 	} else {
-		fp := filepath.Join(g.outputPath, "openapi_base.gen.yaml")
-		f, err := os.Create(fp)
-		if err != nil {
-			return err
-		}
-		defer f.Close()
-
 		w := bufio.NewWriter(f)
 		t.ExecuteTemplate(w, "openapi_base.yaml", metadatas)
 		w.Flush()
