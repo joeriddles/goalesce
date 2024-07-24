@@ -29,7 +29,7 @@ func New{{.model.Name}}Controller() {{.model.Name}}Controller {
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx echo.Context, request Get{{.model.Name}}RequestObject) (Get{{.model.Name}}ResponseObject, error) {
-  {{.model.Name|ToCamelCase}}s, err := c.repository.List(ctx, map[string]interface{}{})
+  {{.model.Name|ToCamelCase}}s, err := c.repository.List(ctx.Request().Context(), map[string]interface{}{})
   if err != nil {
     return nil, err
   }
@@ -51,7 +51,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Con
   if err != nil {
     return nil, err
   }
-  if err = c.repository.Create(ctx, *model); err != nil {
+  if err = c.repository.Create(ctx.Request().Context(), *model); err != nil {
     return nil, err
   }
   apiModel, err := c.mapper.MapToApi(*model)
@@ -62,14 +62,14 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Con
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}Id(ctx echo.Context, request Delete{{.model.Name}}IdRequestObject) (Delete{{.model.Name}}IdResponseObject, error) {
-  if err := c.repository.Delete(ctx, request.Id); err != nil {
+  if err := c.repository.Delete(ctx.Request().Context(), request.Id); err != nil {
     return nil, err
   }
   return Delete{{.model.Name}}Id204Response{}, nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}Id(ctx echo.Context, request Get{{.model.Name}}IdRequestObject) (Get{{.model.Name}}IdResponseObject, error) {
-  model, err := c.repository.Get(ctx, request.Id)
+  model, err := c.repository.Get(ctx.Request().Context(), request.Id)
   apiModel, err := c.mapper.MapToApi(*model)
   if err != nil {
     return nil, err
@@ -82,7 +82,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}Id(ctx echo.Co
   if err != nil {
     return nil, err
   }
-  if err := c.repository.Update(ctx, update); err != nil {
+  if err := c.repository.Update(ctx.Request().Context(), update); err != nil {
     return nil, err
   }
   return nil, nil
