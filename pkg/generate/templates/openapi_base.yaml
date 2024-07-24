@@ -5,7 +5,7 @@ info:
   title: Generated API
 paths:
   {{range .}}/{{.Name|ToHtmlCase}}:
-    $ref: './{{.Name|ToHtmlCase}}.gen.yaml#/paths/~1'
+    $ref: './{{.Name|ToSnakeCase}}.gen.yaml#/paths/~1'
   /{{.Name|ToHtmlCase}}/{id}/:
-    $ref: './{{.Name|ToHtmlCase}}.gen.yaml#/paths/~1%7Bid%7D~1'
+    $ref: './{{.Name|ToSnakeCase}}.gen.yaml#/paths/~1%7Bid%7D~1'
   {{end}}
