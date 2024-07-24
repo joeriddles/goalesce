@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/generate"
@@ -17,6 +19,7 @@ import (
 var (
 	flagPrintUsage bool
 
+	flagConfigFile        string
 	flagOutputFile        string
 	flagModuleName        string
 	flagModelsPkg         string
@@ -29,6 +32,7 @@ func main() {
 	flag.BoolVar(&flagPrintUsage, "help", false, "Show this help and exit.")
 	flag.BoolVar(&flagPrintUsage, "h", false, "Same as -help.")
 
+	flag.StringVar(&flagConfigFile, "config", "", "A YAML config file that controls gorm-oapi-codegen behavior.")
 	flag.StringVar(&flagOutputFile, "o", "./generated", "Where to output generated code, ./generated/ is default.")
 	flag.StringVar(&flagModuleName, "module", "", "The name of the module the generated code will be part of")
 	flag.StringVar(&flagModelsPkg, "pkg", "", "The name of the package that the GORM models are part of")
@@ -43,54 +47,58 @@ func main() {
 		os.Exit(0)
 	}
 
-	if flagModuleName == "" {
-		errExit("Please specify a module name with -module\n")
+	var cfg *config.Config
+	if flagConfigFile != "" {
+		absoluteConfigFile, err := filepath.Abs(flagConfigFile)
+		if err != nil {
+			errExit("config file not found '%s': %v\n", flagConfigFile, err)
+		}
+		configFile, err := os.ReadFile(absoluteConfigFile)
+		if err != nil {
+			errExit("error reading config file '%s': %v\n", absoluteConfigFile, err)
+		}
+		cfg = &config.Config{}
+		if err = yaml.UnmarshalStrict(configFile, cfg); err != nil {
+			errExit("error parsing config: %v", err)
+		}
 	}
 
-	if flagModelsPkg == "" {
-		errExit("Please specify a package name for the GORM models with -pkg\n")
+	if cfg == nil {
+		if flag.NArg() < 1 {
+			errExit("Please specify a path to a folder of GORM models\n")
+		} else if flag.NArg() > 1 {
+			errExit("Only one folder path is accepted and it must be the last CLI argument\n")
+		}
+
+		cfg = &config.Config{
+			InputFolderPath:   flag.Args()[0],
+			OutputFile:        flagOutputFile,
+			ModuleName:        flagModuleName,
+			ModelsPkg:         flagModelsPkg,
+			ClearOutputDir:    flagClearOutputDir,
+			AllowCustomModels: flagAllowCustomModels,
+			PruneYaml:         flagPruneYaml,
+		}
 	}
 
-	if flag.NArg() < 1 {
-		errExit("Please specify a path to a folder of GORM models\n")
-	} else if flag.NArg() > 1 {
-		errExit("Only one folder path is accepted and it must be the last CLI argument\n")
+	if err := cfg.Validate(); err != nil {
+		errExit("configuration error: %v\n", err)
 	}
 
-	folderPath := flag.Arg(0)
-
-	cfg := config.NewConfig()
-
-	err := cfg.WithInputFolderPath(folderPath)
-	if err != nil {
-		errExit("Invalid input folder path: %v\n", folderPath)
-	}
-
-	err = cfg.WithOutputFile(flagOutputFile)
-	if err != nil {
-		errExit("Invalid output filepath: %v\n", flagOutputFile)
-	}
-
-	cfg.WithModuleName(flagModuleName)
-	cfg.WithModelPkg(flagModelsPkg)
-	cfg.WithClearOutputDir(flagClearOutputDir)
-	cfg.WithAllowCustomModels(flagAllowCustomModels)
-	cfg.WithPruneYaml(flagPruneYaml)
-
-	if err := run(cfg); err != nil {
+	if err := run(*cfg); err != nil {
 		errExit(err.Error())
 	}
 }
 
 func run(cfg config.Config) error {
-	folderPath := cfg.InputFolderPath()
+	folderPath := cfg.InputFolderPath
 	entries, err := os.ReadDir(folderPath)
 	if err != nil {
 		return err
 	}
 
 	logger := log.Default()
-	parser := parse.NewParser(logger, cfg.AllowCustomModels())
+	parser := parse.NewParser(logger, cfg.AllowCustomModels)
 
 	metadatas := []*entity.GormModelMetadata{}
 	for _, entry := range entries {

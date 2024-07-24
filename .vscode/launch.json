@@ -6,9 +6,10 @@
       "type": "go",
       "request": "launch",
       "mode": "auto",
-      "program": ".",
+      "program": "./cmd/gorm-oapi-codegen/gorm-oapi-codegen.go",
       "args": [
-        "examples/cars",
+        "-config",
+        "${workspaceFolder}/examples/cars/config.yaml",
       ],
     }
   ]

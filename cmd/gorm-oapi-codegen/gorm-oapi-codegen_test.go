@@ -10,59 +10,55 @@ import (
 // TODO(joeriddles): assert golden files
 
 func Test_Basic(t *testing.T) {
-	cfg := config.NewConfig()
-	err := cfg.WithInputFolderPath("../../examples/basic")
-	require.NoError(t, err)
-	err = cfg.WithOutputFile("./generated/basic")
-	require.NoError(t, err)
-	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
-	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/basic")
-	cfg.WithClearOutputDir(true)
-
-	err = run(cfg)
+	cfg := &config.Config{
+		InputFolderPath: "../../examples/basic",
+		OutputFile:      "./generated/basic",
+		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
+		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/basic",
+		ClearOutputDir:  true,
+	}
+	require.NoError(t, cfg.Validate())
+	err := run(*cfg)
 	require.NoError(t, err)
 }
 
 func Test_Cars(t *testing.T) {
-	cfg := config.NewConfig()
-	err := cfg.WithInputFolderPath("../../examples/cars")
-	require.NoError(t, err)
-	err = cfg.WithOutputFile("./generated/cars")
-	require.NoError(t, err)
-	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
-	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/cars")
-	cfg.WithClearOutputDir(true)
-
-	err = run(cfg)
+	cfg := &config.Config{
+		InputFolderPath: "../../examples/cars",
+		OutputFile:      "./generated/cars",
+		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
+		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/cars",
+		ClearOutputDir:  true,
+	}
+	require.NoError(t, cfg.Validate())
+	err := run(*cfg)
 	require.NoError(t, err)
 }
 
 func Test_Custom(t *testing.T) {
-	cfg := config.NewConfig()
-	err := cfg.WithInputFolderPath("../../examples/custom")
-	require.NoError(t, err)
-	err = cfg.WithOutputFile("./generated/custom")
-	require.NoError(t, err)
-	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
-	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/custom")
-	cfg.WithAllowCustomModels(true)
-	cfg.WithClearOutputDir(true)
-
-	err = run(cfg)
+	cfg := &config.Config{
+		InputFolderPath:   "../../examples/custom",
+		OutputFile:        "./generated/custom",
+		ModuleName:        "github.com/joeriddles/gorm-oapi-codegen",
+		ModelsPkg:         "github.com/joeriddles/gorm-oapi-codegen/examples/custom",
+		AllowCustomModels: true,
+		ClearOutputDir:    true,
+	}
+	require.NoError(t, cfg.Validate())
+	err := run(*cfg)
 	require.NoError(t, err)
 }
 
 func Test_Circular(t *testing.T) {
-	cfg := config.NewConfig()
-	err := cfg.WithInputFolderPath("../../examples/circular")
-	require.NoError(t, err)
-	err = cfg.WithOutputFile("./generated/circular")
-	require.NoError(t, err)
-	cfg.WithModuleName("github.com/joeriddles/gorm-oapi-codegen")
-	cfg.WithModelPkg("github.com/joeriddles/gorm-oapi-codegen/examples/circular")
-	cfg.WithAllowCustomModels(true)
-	cfg.WithClearOutputDir(true)
-
-	err = run(cfg)
+	cfg := &config.Config{
+		InputFolderPath:   "../../examples/circular",
+		OutputFile:        "./generated/circular",
+		ModuleName:        "github.com/joeriddles/gorm-oapi-codegen",
+		ModelsPkg:         "github.com/joeriddles/gorm-oapi-codegen/examples/circular",
+		AllowCustomModels: true,
+		ClearOutputDir:    true,
+	}
+	require.NoError(t, cfg.Validate())
+	err := run(*cfg)
 	require.NoError(t, err)
 }

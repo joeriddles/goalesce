@@ -1,111 +1,54 @@
 package config
 
 import (
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 )
 
-type Config interface {
-	InputFolderPath() string
-	OutputFile() string
-	ModuleName() string
-	ModelsPkg() string
-	ClearOutputDir() bool
-	AllowCustomModels() bool
-	PruneYaml() bool
-
-	WithInputFolderPath(value string) error
-	WithOutputFile(value string) error
-	WithModuleName(value string)
-	WithModelPkg(value string)
-	WithClearOutputDir(value bool)
-	WithAllowCustomModels(value bool)
-	WithPruneYaml(value bool)
+type Config struct {
+	InputFolderPath   string `yaml:"input_folder_path"`
+	OutputFile        string `yaml:"output_file_path"`
+	ModuleName        string `yaml:"module_name"`
+	ModelsPkg         string `yaml:"models_package"`
+	ClearOutputDir    bool   `yaml:"clear_output_dir"`
+	AllowCustomModels bool   `yaml:"allow_custom_models"`
+	PruneYaml         bool   `yaml:"prune_yaml"`
 }
 
-var _ Config = &config{}
+func (o *Config) Validate() error {
+	var errs []error
 
-type config struct {
-	inputFolderPath   string
-	outputFile        string
-	moduleName        string
-	modelsPkg         string
-	clearOutputDir    bool
-	allowCustomModels bool
-	pruneYaml         bool
-}
+	if o.ModuleName == "" {
+		errs = append(errs, errors.New("module_name must be specified"))
+	}
 
-func NewConfig() *config {
-	return &config{}
-}
+	if o.ModelsPkg == "" {
+		errs = append(errs, errors.New("model_package must be specified"))
+	}
 
-func (c *config) ClearOutputDir() bool {
-	return c.clearOutputDir
-}
+	if o.OutputFile == "" {
+		errs = append(errs, errors.New("output_file_path must be specified"))
+	}
 
-func (c *config) InputFolderPath() string {
-	return c.inputFolderPath
-}
+	err := errors.Join(errs...)
+	if err != nil {
+		return fmt.Errorf("failed to validate configuration: %w", err)
+	}
 
-func (c *config) ModelsPkg() string {
-	return c.modelsPkg
-}
+	o.InputFolderPath, err = filepath.Abs(o.InputFolderPath)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(o.InputFolderPath); err != nil {
+		return err
+	}
 
-func (c *config) ModuleName() string {
-	return c.moduleName
-}
-
-func (c *config) OutputFile() string {
-	return c.outputFile
-}
-
-func (c *config) AllowCustomModels() bool {
-	return c.allowCustomModels
-}
-
-func (c *config) PruneYaml() bool {
-	return c.pruneYaml
-}
-
-func (c *config) WithInputFolderPath(value string) error {
-	var err error
-	c.inputFolderPath, err = filepath.Abs(value)
+	o.OutputFile, err = filepath.Abs(o.OutputFile)
 	if err != nil {
 		return err
 	}
 
-	// Check path exists and we have permission to read it
-	if _, err := os.Stat(c.inputFolderPath); err != nil {
-		return err
-	}
 	return nil
-}
-
-func (c *config) WithOutputFile(value string) error {
-	var err error
-	c.outputFile, err = filepath.Abs(value)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (c *config) WithModuleName(value string) {
-	c.moduleName = value
-}
-
-func (c *config) WithModelPkg(value string) {
-	c.modelsPkg = value
-}
-
-func (c *config) WithClearOutputDir(value bool) {
-	c.clearOutputDir = value
-}
-
-func (c *config) WithAllowCustomModels(value bool) {
-	c.allowCustomModels = value
-}
-
-func (c *config) WithPruneYaml(value bool) {
-	c.pruneYaml = value
 }

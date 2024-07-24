@@ -37,7 +37,7 @@ type generator struct {
 }
 
 func NewGenerator(logger *log.Logger, cfg config.Config) (Generator, error) {
-	outputPath := cfg.OutputFile()
+	outputPath := cfg.OutputFile
 	modulePath, err := utils.FindGoMod(outputPath)
 	if err != nil {
 		return nil, err
@@ -63,7 +63,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	if g.cfg.ClearOutputDir() {
+	if g.cfg.ClearOutputDir {
 		if err := os.RemoveAll(g.outputPath); err != nil {
 			return err
 		}
@@ -174,7 +174,7 @@ func (g *generator) combineOpenApiFiles() error {
 		return err
 	}
 
-	if g.cfg.PruneYaml() {
+	if g.cfg.PruneYaml {
 		entries, err := os.ReadDir(g.outputPath)
 		if err != nil {
 			return err
@@ -224,7 +224,7 @@ func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity
 
 func (g *generator) generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
 	fp := filepath.Join(g.outputPath, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
-	repositoryImportPath := filepath.Join(g.cfg.ModuleName(), g.relativePkgPath, "repository")
+	repositoryImportPath := filepath.Join(g.cfg.ModuleName, g.relativePkgPath, "repository")
 	return g.generateGo(
 		t,
 		fp,
@@ -253,7 +253,7 @@ func (g *generator) generateRepository(t *template.Template, metadata *entity.Go
 		fp,
 		"repository.tmpl",
 		map[string]interface{}{
-			"pkg":   g.cfg.ModelsPkg(),
+			"pkg":   g.cfg.ModelsPkg,
 			"model": metadata,
 		},
 	)
@@ -266,7 +266,7 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 		fp,
 		"mapper.tmpl",
 		map[string]interface{}{
-			"pkg":   g.cfg.ModelsPkg(),
+			"pkg":   g.cfg.ModelsPkg,
 			"model": metadata,
 		},
 	)
@@ -274,7 +274,7 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 
 func (g *generator) generateMain(t *template.Template) error {
 	fp := filepath.Join(g.outputPath, "main.go")
-	apiImportPath := filepath.Join(g.cfg.ModuleName(), g.relativePkgPath, "api")
+	apiImportPath := filepath.Join(g.cfg.ModuleName, g.relativePkgPath, "api")
 	return g.generateGo(
 		t,
 		fp,
