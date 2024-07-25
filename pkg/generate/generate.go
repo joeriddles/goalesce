@@ -553,7 +553,7 @@ func createDirs(paths ...string) error {
 	for _, path := range paths {
 		if err := os.MkdirAll(path, os.ModePerm); err != nil {
 			if err.Error() != "mkdir generated: file exists" {
-				return err
+				return fmt.Errorf("could not create path %v: %v", path, err)
 			}
 		}
 	}
