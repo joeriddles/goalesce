@@ -20,7 +20,7 @@ type Config struct {
 	OpenApiFile       string                `yaml:"openapi_file"`
 	ServerCodegen     *OApiGenConfiguration `yaml:"server_codegen,omitempty"`
 	ModelsCodegen     *OApiGenConfiguration `yaml:"models_codegen,omitempty"`
-	ExcludeModels     []string              `yaml:"exclude_paths,omitempty"`
+	ExcludeModels     []string              `yaml:"exclude_models,omitempty"`
 }
 
 type OApiGenConfiguration struct {
