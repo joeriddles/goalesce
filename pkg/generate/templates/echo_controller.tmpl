@@ -71,6 +71,9 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}Id(ctx echo
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}Id(ctx echo.Context, request {{Types}}Get{{.model.Name}}IdRequestObject) ({{Types}}Get{{.model.Name}}IdResponseObject, error) {
   model, err := c.repository.Get(ctx.Request().Context(), request.Id)
+  if err != nil {
+    return nil, err
+  }
   apiModel, err := c.mapper.MapToApi(*model)
   if err != nil {
     return nil, err

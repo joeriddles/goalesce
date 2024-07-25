@@ -42,16 +42,17 @@ func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model model.{{.model.Name}}
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj {{Types}}Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
-  // TODO: use automapper
-	model := &model.{{.model.Name}}{}
-	m.modelMapper.Map(obj, model)
+	model := &model.{{.model.Name}}{} // TODO: use automapper
+	if err := m.modelMapper.Map(obj, model); err != nil {
+    return nil, err
+  }
 	return model, nil
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj {{Types}}Update{{.model.Name}}) (map[string]interface{}, error) {
-// TODO: use automapper
-	update := &map[string]interface{}{}
-	m.updateMapper.Map(obj, update)
+	update := &map[string]interface{}{} // TODO: use automapper
+	if err := m.updateMapper.Map(obj, update); err != nil {
+    return nil, err
+  }
 	return *update, nil
 }
-
