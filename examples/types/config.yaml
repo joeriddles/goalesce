@@ -1,0 +1,19 @@
+input_folder_path: "./"
+output_file_path: "./generated"
+module_name: "github.com/joeriddles/gorm-oapi-codegen/examples/types"
+models_package: "github.com/joeriddles/gorm-oapi-codegen/examples/types"
+clear_output_dir: true
+
+server_codegen:
+  package: generated
+  generate:
+    std-http-server: true
+    strict-server: true
+    embedded-spec: true
+  output: ./generated/server_gen.go
+
+types_codegen:
+  package: generated
+  generate:
+    models: true
+  output: ./generated/types_gen.go

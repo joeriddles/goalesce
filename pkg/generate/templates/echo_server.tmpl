@@ -21,23 +21,23 @@ func NewServer() *Server {
   }
 }
 
-{{range .metadatas}}func (s *Server) Get{{.Name}}(ctx echo.Context, request Get{{.Name}}RequestObject) (Get{{.Name}}ResponseObject, error) {
+{{range .metadatas}}func (s *Server) Get{{.Name}}(ctx echo.Context, request {{Types}}Get{{.Name}}RequestObject) (Get{{.Name}}ResponseObject, error) {
   return s.{{.Name}}Controller.Get{{.Name}}(ctx, request)
 }
 
-func (s *Server) Post{{.Name}}(ctx echo.Context, request Post{{.Name}}RequestObject) (Post{{.Name}}ResponseObject, error) {
+func (s *Server) Post{{.Name}}(ctx echo.Context, request {{Types}}Post{{.Name}}RequestObject) (Post{{.Name}}ResponseObject, error) {
   return s.{{.Name}}Controller.Post{{.Name}}(ctx, request)
 }
 
-func (s *Server) Delete{{.Name}}Id(ctx echo.Context, request Delete{{.Name}}IdRequestObject) (Delete{{.Name}}IdResponseObject, error) {
+func (s *Server) Delete{{.Name}}Id(ctx echo.Context, request {{Types}}Delete{{.Name}}IdRequestObject) (Delete{{.Name}}IdResponseObject, error) {
   return s.{{.Name}}Controller.Delete{{.Name}}Id(ctx, request)
 }
 
-func (s *Server) Get{{.Name}}Id(ctx echo.Context, request Get{{.Name}}IdRequestObject) (Get{{.Name}}IdResponseObject, error) {
+func (s *Server) Get{{.Name}}Id(ctx echo.Context, request {{Types}}Get{{.Name}}IdRequestObject) (Get{{.Name}}IdResponseObject, error) {
   return s.{{.Name}}Controller.Get{{.Name}}Id(ctx, request)
 }
 
-func (s *Server) Put{{.Name}}Id(ctx echo.Context, request Put{{.Name}}IdRequestObject) (Put{{.Name}}IdResponseObject, error) {
+func (s *Server) Put{{.Name}}Id(ctx echo.Context, request {{Types}}Put{{.Name}}IdRequestObject) (Put{{.Name}}IdResponseObject, error) {
   return s.{{.Name}}Controller.Put{{.Name}}Id(ctx, request)
 }
 {{end}}

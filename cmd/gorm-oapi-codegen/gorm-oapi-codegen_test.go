@@ -72,7 +72,7 @@ func Test_GenerateEcho(t *testing.T) {
 		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/echo",
 		ClearOutputDir:  true,
 		PruneYaml:       true,
-		ModelsCodegen: &config.OApiGenConfiguration{
+		TypesCodegen: &config.OApiGenConfiguration{
 			Configuration: codegen.Configuration{
 				PackageName: "api",
 				Generate: codegen.GenerateOptions{
@@ -126,5 +126,21 @@ func Test_GenerateExclude(t *testing.T) {
 	}
 	require.NoError(t, cfg.Validate())
 	err := run(cfg)
+	require.NoError(t, err)
+}
+
+func Test_GenerateExclude_Yaml(t *testing.T) {
+	cfg, err := config.FromYamlFile("../../examples/exclude/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
+	require.NoError(t, err)
+}
+
+func Test_GenerateNestedTypes_Yaml(t *testing.T) {
+	cfg, err := config.FromYamlFile("../../examples/types/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
 	require.NoError(t, err)
 }

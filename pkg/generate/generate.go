@@ -37,6 +37,7 @@ type generator struct {
 	logger          *log.Logger
 	cfg             *config.Config
 	relativePkgPath string
+	typesPackage    *string
 }
 
 func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
@@ -50,10 +51,23 @@ func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 		return nil, err
 	}
 
+	var typesPackage *string = nil
+	defaultOutputFile := filepath.Join(cfg.OutputFile, "api", "types.gen.go")
+	if cfg.TypesCodegen.OutputFile != defaultOutputFile {
+		relPkg, err := filepath.Rel(moduleRootPath, cfg.TypesCodegen.OutputFile)
+		if err != nil {
+			return nil, err
+		}
+		pkg := filepath.Join(cfg.ModuleName, relPkg)
+		pkg = filepath.Dir(pkg) // remove filename
+		typesPackage = &pkg
+	}
+
 	return &generator{
 		logger:          logger,
 		cfg:             cfg,
 		relativePkgPath: relPath,
+		typesPackage:    typesPackage,
 	}, nil
 }
 
@@ -98,11 +112,11 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	code, err := codegen.Generate(swagger, g.cfg.ModelsCodegen.Configuration)
+	code, err := codegen.Generate(swagger, g.cfg.TypesCodegen.Configuration)
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile(g.cfg.ModelsCodegen.OutputFile, []byte(code), 0o644); err != nil {
+	if err = os.WriteFile(g.cfg.TypesCodegen.OutputFile, []byte(code), 0o644); err != nil {
 		return err
 	}
 
@@ -140,9 +154,12 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	if err := g.generateMain(t); err != nil {
-		return err
+	if g.cfg.GenerateMain {
+		if err := g.generateMain(t); err != nil {
+			return err
+		}
 	}
+
 	if err := g.generateMapperUtil(t); err != nil {
 		return err
 	}
@@ -279,6 +296,7 @@ func (g *generator) generateController(t *template.Template, metadata *entity.Go
 		template,
 		map[string]interface{}{
 			"package":              g.cfg.ServerCodegen.PackageName,
+			"typesPackage":         g.typesPackage,
 			"repositoryImportPath": repositoryImportPath,
 			"model":                metadata,
 		},
@@ -298,8 +316,9 @@ func (g *generator) generateServer(t *template.Template, metadatas []*entity.Gor
 		fp,
 		template,
 		map[string]interface{}{
-			"package":   g.cfg.ServerCodegen.PackageName,
-			"metadatas": metadatas,
+			"package":      g.cfg.ServerCodegen.PackageName,
+			"typesPackage": g.typesPackage,
+			"metadatas":    metadatas,
 		},
 	)
 }
@@ -324,9 +343,10 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 		fp,
 		"mapper.tmpl",
 		map[string]interface{}{
-			"package": g.cfg.ServerCodegen.PackageName,
-			"pkg":     g.cfg.ModelsPkg,
-			"model":   metadata,
+			"package":      g.cfg.ServerCodegen.PackageName,
+			"typesPackage": g.typesPackage,
+			"pkg":          g.cfg.ModelsPkg,
+			"model":        metadata,
 		},
 	)
 }
@@ -401,6 +421,13 @@ func (g *generator) generateGo(t *template.Template, fp string, template string,
 // loadTemplates loads all of our template files into a text/template. The
 // path of template is relative to the templates directory.
 func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
+	getTypesNamespace := func() string {
+		if g.typesPackage == nil {
+			return ""
+		}
+		return "types."
+	}
+
 	funcMap := template.FuncMap{
 		"ToLower":        strings.ToLower,
 		"ToCamelCase":    utils.ToCamelCase,
@@ -414,6 +441,7 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"IsComplexType":  isComplexType,
 		"IsNullable":     isNullable,
 		"Not":            not,
+		"Types":          getTypesNamespace,
 	}
 
 	return fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {

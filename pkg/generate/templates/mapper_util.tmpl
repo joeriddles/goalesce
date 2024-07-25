@@ -23,7 +23,7 @@ func _NewModelMapper() _Mapper {
 	return &_modelMapper{}
 }
 
-// Add properties from the request body to the model instance.
+// Add properties from the request {{Types}}body to the model instance.
 func (m *_modelMapper) Map(
 	body interface{},
 	model interface{},
@@ -50,7 +50,7 @@ func _NewUpdateMapper() _Mapper {
 	return &_updateMapper{}
 }
 
-// Map an API request object to a GORM update with the correct column names.
+// Map an API request {{Types}}object to a GORM update with the correct column names.
 func (m *_updateMapper) Map(
 	body interface{},
 	to interface{},
@@ -73,7 +73,7 @@ func (m *_updateMapper) Map(
 	return nil
 }
 
-// Convert the request body to an update map.
+// Convert the request {{Types}}body to an update map.
 func convertBodyToUpdate(
 	value interface{},
 	update *map[string]interface{},

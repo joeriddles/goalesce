@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gopkg.in/yaml.v2"
-
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/generate"
@@ -48,18 +46,11 @@ func main() {
 	}
 
 	var cfg *config.Config
+	var err error
 	if flagConfigFile != "" {
-		absoluteConfigFile, err := filepath.Abs(flagConfigFile)
+		cfg, err = config.FromYamlFile(flagConfigFile)
 		if err != nil {
-			errExit("config file not found '%s': %v\n", flagConfigFile, err)
-		}
-		configFile, err := os.ReadFile(absoluteConfigFile)
-		if err != nil {
-			errExit("error reading config file '%s': %v\n", absoluteConfigFile, err)
-		}
-		cfg = &config.Config{}
-		if err = yaml.UnmarshalStrict(configFile, cfg); err != nil {
-			errExit("error parsing config: %v", err)
+			errExit("%v", err)
 		}
 	}
 

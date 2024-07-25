@@ -3,9 +3,10 @@ package {{.package}}
 
 import (
 	"context"
+  {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 
-var _ StrictServerInterface = (*Server)(nil)
+var _ {{Types}}StrictServerInterface = (*Server)(nil)
 
 type Server struct {
   {{range .metadatas}}{{.Name}}Controller
@@ -19,23 +20,23 @@ func NewServer() *Server {
   }
 }
 
-{{range .metadatas}}func (s *Server) Get{{.Name}}(ctx context.Context, request Get{{.Name}}RequestObject) (Get{{.Name}}ResponseObject, error) {
+{{range .metadatas}}func (s *Server) Get{{.Name}}(ctx context.Context, request {{Types}}Get{{.Name}}RequestObject) ({{Types}}Get{{.Name}}ResponseObject, error) {
   return s.{{.Name}}Controller.Get{{.Name}}(ctx, request)
 }
 
-func (s *Server) Post{{.Name}}(ctx context.Context, request Post{{.Name}}RequestObject) (Post{{.Name}}ResponseObject, error) {
+func (s *Server) Post{{.Name}}(ctx context.Context, request {{Types}}Post{{.Name}}RequestObject) ({{Types}}Post{{.Name}}ResponseObject, error) {
   return s.{{.Name}}Controller.Post{{.Name}}(ctx, request)
 }
 
-func (s *Server) Delete{{.Name}}Id(ctx context.Context, request Delete{{.Name}}IdRequestObject) (Delete{{.Name}}IdResponseObject, error) {
+func (s *Server) Delete{{.Name}}Id(ctx context.Context, request {{Types}}Delete{{.Name}}IdRequestObject) ({{Types}}Delete{{.Name}}IdResponseObject, error) {
   return s.{{.Name}}Controller.Delete{{.Name}}Id(ctx, request)
 }
 
-func (s *Server) Get{{.Name}}Id(ctx context.Context, request Get{{.Name}}IdRequestObject) (Get{{.Name}}IdResponseObject, error) {
+func (s *Server) Get{{.Name}}Id(ctx context.Context, request {{Types}}Get{{.Name}}IdRequestObject) ({{Types}}Get{{.Name}}IdResponseObject, error) {
   return s.{{.Name}}Controller.Get{{.Name}}Id(ctx, request)
 }
 
-func (s *Server) Put{{.Name}}Id(ctx context.Context, request Put{{.Name}}IdRequestObject) (Put{{.Name}}IdResponseObject, error) {
+func (s *Server) Put{{.Name}}Id(ctx context.Context, request {{Types}}Put{{.Name}}IdRequestObject) ({{Types}}Put{{.Name}}IdResponseObject, error) {
   return s.{{.Name}}Controller.Put{{.Name}}Id(ctx, request)
 }
 {{end}}

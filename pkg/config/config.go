@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
+	"gopkg.in/yaml.v2"
 )
 
 type Config struct {
@@ -19,8 +21,9 @@ type Config struct {
 	PruneYaml         bool                  `yaml:"prune_yaml"`
 	OpenApiFile       string                `yaml:"openapi_file"`
 	ServerCodegen     *OApiGenConfiguration `yaml:"server_codegen,omitempty"`
-	ModelsCodegen     *OApiGenConfiguration `yaml:"models_codegen,omitempty"`
+	TypesCodegen      *OApiGenConfiguration `yaml:"types_codegen,omitempty"`
 	ExcludeModels     []string              `yaml:"exclude_models,omitempty"`
+	GenerateMain      bool                  `yaml:"generate_main"`
 }
 
 type OApiGenConfiguration struct {
@@ -28,6 +31,44 @@ type OApiGenConfiguration struct {
 
 	// OutputFile is the filepath to output.
 	OutputFile string `yaml:"output,omitempty"`
+}
+
+func FromYamlFile(fp string) (*Config, error) {
+	absoluteConfigFile, err := filepath.Abs(fp)
+	if err != nil {
+		return nil, fmt.Errorf("config file not found '%s': %v", fp, err)
+	}
+	configFile, err := os.ReadFile(absoluteConfigFile)
+	if err != nil {
+		return nil, fmt.Errorf("error reading config file '%s': %v", fp, err)
+	}
+	cfg := &Config{}
+	if err = yaml.UnmarshalStrict(configFile, cfg); err != nil {
+		return nil, fmt.Errorf("error parsing config: %v", err)
+	}
+
+	// Make any relative paths relative to the YAML config filepath
+	configDir := filepath.Dir(absoluteConfigFile)
+	if isRelativeFilepath(cfg.InputFolderPath) {
+		cfg.InputFolderPath = filepath.Join(configDir, cfg.InputFolderPath)
+	}
+	if isRelativeFilepath(cfg.OutputFile) {
+		cfg.OutputFile = filepath.Join(configDir, cfg.OutputFile)
+	}
+	if isRelativeFilepath(cfg.OpenApiFile) {
+		cfg.OpenApiFile = filepath.Join(configDir, cfg.OpenApiFile)
+	}
+	if cfg.ServerCodegen != nil && isRelativeFilepath(cfg.ServerCodegen.OutputFile) {
+		cfg.ServerCodegen.OutputFile = filepath.Join(configDir, cfg.ServerCodegen.OutputFile)
+	}
+	if cfg.TypesCodegen != nil && isRelativeFilepath(cfg.TypesCodegen.OutputFile) {
+		cfg.TypesCodegen.OutputFile = filepath.Join(configDir, cfg.TypesCodegen.OutputFile)
+	}
+
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	return cfg, nil
 }
 
 func (o *Config) Validate() error {
@@ -70,9 +111,9 @@ func (o *Config) Validate() error {
 		}
 	}
 
-	if o.ModelsCodegen == nil {
+	if o.TypesCodegen == nil {
 		outputFile := filepath.Join(o.OutputFile, "api", "types.gen.go")
-		o.ModelsCodegen = &OApiGenConfiguration{
+		o.TypesCodegen = &OApiGenConfiguration{
 			OutputFile: outputFile,
 			Configuration: codegen.Configuration{
 				PackageName: "api",
@@ -97,4 +138,8 @@ func (o *Config) Validate() error {
 	}
 
 	return nil
+}
+
+func isRelativeFilepath(fp string) bool {
+	return !strings.HasPrefix("/", fp)
 }
