@@ -82,7 +82,7 @@ func (o *Config) Validate() error {
 
 	if o.ServerCodegen == nil {
 		o.ServerCodegen = &OApiGenConfiguration{
-			OutputFile: "server.gen.go",
+			OutputFile: "server_interface.gen.go",
 			Configuration: codegen.Configuration{
 				PackageName: "api",
 				Generate: codegen.GenerateOptions{
