@@ -100,19 +100,19 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	code, err := codegen.Generate(swagger, *g.cfg.ModelsCodegen)
+	code, err := codegen.Generate(swagger, g.cfg.ModelsCodegen.Configuration)
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile(filepath.Join(g.outputPath, "api", "types.gen.go"), []byte(code), 0o644); err != nil {
+	if err = os.WriteFile(filepath.Join(g.outputPath, "api", g.cfg.ModelsCodegen.OutputFile), []byte(code), 0o644); err != nil {
 		return err
 	}
 
-	code, err = codegen.Generate(swagger, *g.cfg.ServerCodegen)
+	code, err = codegen.Generate(swagger, g.cfg.ServerCodegen.Configuration)
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile(filepath.Join(g.outputPath, "api", "server_interface.gen.go"), []byte(code), 0o644); err != nil {
+	if err = os.WriteFile(filepath.Join(g.outputPath, "api", g.cfg.ServerCodegen.OutputFile), []byte(code), 0o644); err != nil {
 		return err
 	}
 

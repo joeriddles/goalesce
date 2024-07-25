@@ -72,18 +72,22 @@ func Test_GenerateEcho(t *testing.T) {
 		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/echo",
 		ClearOutputDir:  true,
 		PruneYaml:       true,
-		ModelsCodegen: &codegen.Configuration{
-			PackageName: "api",
-			Generate: codegen.GenerateOptions{
-				Models: true,
+		ModelsCodegen: &config.OApiGenConfiguration{
+			Configuration: codegen.Configuration{
+				PackageName: "api",
+				Generate: codegen.GenerateOptions{
+					Models: true,
+				},
 			},
 		},
-		ServerCodegen: &codegen.Configuration{
-			PackageName: "api",
-			Generate: codegen.GenerateOptions{
-				EchoServer:   true,
-				Strict:       true,
-				EmbeddedSpec: true,
+		ServerCodegen: &config.OApiGenConfiguration{
+			Configuration: codegen.Configuration{
+				PackageName: "api",
+				Generate: codegen.GenerateOptions{
+					EchoServer:   true,
+					Strict:       true,
+					EmbeddedSpec: true,
+				},
 			},
 		},
 	}
