@@ -40,13 +40,12 @@ type generator struct {
 }
 
 func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
-	outputPath := cfg.OutputFile
-	modulePath, err := utils.FindGoMod(outputPath)
+	modulePath, err := utils.FindGoMod(cfg.OutputFile)
 	if err != nil {
 		return nil, err
 	}
 	moduleRootPath := filepath.Dir(modulePath)
-	relPath, err := filepath.Rel(moduleRootPath, outputPath)
+	relPath, err := filepath.Rel(moduleRootPath, cfg.OutputFile)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +53,6 @@ func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 	return &generator{
 		logger:          logger,
 		cfg:             cfg,
-		outputPath:      outputPath,
 		relativePkgPath: relPath,
 	}, nil
 }
@@ -104,7 +102,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile(filepath.Join(g.outputPath, "api", g.cfg.ModelsCodegen.OutputFile), []byte(code), 0o644); err != nil {
+	if err = os.WriteFile(g.cfg.ModelsCodegen.OutputFile, []byte(code), 0o644); err != nil {
 		return err
 	}
 
@@ -112,7 +110,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	if err != nil {
 		return err
 	}
-	if err = os.WriteFile(filepath.Join(g.outputPath, "api", g.cfg.ServerCodegen.OutputFile), []byte(code), 0o644); err != nil {
+	if err = os.WriteFile(g.cfg.ServerCodegen.OutputFile, []byte(code), 0o644); err != nil {
 		return err
 	}
 

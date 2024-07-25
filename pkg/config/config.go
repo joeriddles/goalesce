@@ -26,7 +26,7 @@ type Config struct {
 type OApiGenConfiguration struct {
 	codegen.Configuration `yaml:",inline"`
 
-	// OutputFile is the filename to output.
+	// OutputFile is the filepath to output.
 	OutputFile string `yaml:"output,omitempty"`
 }
 
@@ -71,8 +71,9 @@ func (o *Config) Validate() error {
 	}
 
 	if o.ModelsCodegen == nil {
+		outputFile := filepath.Join(o.OutputFile, "api", "types.gen.go")
 		o.ModelsCodegen = &OApiGenConfiguration{
-			OutputFile: "types.gen.go",
+			OutputFile: outputFile,
 			Configuration: codegen.Configuration{
 				PackageName: "api",
 				Generate:    codegen.GenerateOptions{Models: true},
@@ -81,8 +82,9 @@ func (o *Config) Validate() error {
 	}
 
 	if o.ServerCodegen == nil {
+		outputFile := filepath.Join(o.OutputFile, "api", "server_interface.gen.go")
 		o.ServerCodegen = &OApiGenConfiguration{
-			OutputFile: "server_interface.gen.go",
+			OutputFile: outputFile,
 			Configuration: codegen.Configuration{
 				PackageName: "api",
 				Generate: codegen.GenerateOptions{
