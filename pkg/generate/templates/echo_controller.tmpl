@@ -6,6 +6,7 @@ import (
 
   "github.com/labstack/echo/v4"
   "{{.repositoryImportPath}}"
+  {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 
 type {{.model.Name}}Controller interface {
@@ -34,7 +35,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx echo.Cont
     return nil, err
   }
 
-  result := []{{.model.Name}}{}
+  result := []{{Types}}{{.model.Name}}{}
   for _, {{.model.Name|ToCamelCase}} := range {{.model.Name|ToCamelCase}}s {
     api{{.model.Name}}, err := c.mapper.MapToApi(*{{.model.Name|ToCamelCase}})
     if err != nil {
@@ -43,7 +44,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx echo.Cont
     result = append(result, *api{{.model.Name}})
   }
 
-  return Get{{.model.Name}}200JSONResponse(result), nil
+  return {{Types}}Get{{.model.Name}}200JSONResponse(result), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error) {
@@ -58,14 +59,14 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Con
   if err != nil {
     return nil, err
   }
-  return Post{{.model.Name}}201JSONResponse(*apiModel), nil
+  return {{Types}}Post{{.model.Name}}201JSONResponse(*apiModel), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}Id(ctx echo.Context, request {{Types}}Delete{{.model.Name}}IdRequestObject) ({{Types}}Delete{{.model.Name}}IdResponseObject, error) {
   if err := c.repository.Delete(ctx.Request().Context(), request.Id); err != nil {
     return nil, err
   }
-  return Delete{{.model.Name}}Id204Response{}, nil
+  return {{Types}}Delete{{.model.Name}}Id204Response{}, nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}Id(ctx echo.Context, request {{Types}}Get{{.model.Name}}IdRequestObject) ({{Types}}Get{{.model.Name}}IdResponseObject, error) {
@@ -74,7 +75,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}Id(ctx echo.Co
   if err != nil {
     return nil, err
   }
-  return Get{{.model.Name}}Id200JSONResponse(*apiModel), err
+  return {{Types}}Get{{.model.Name}}Id200JSONResponse(*apiModel), err
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}Id(ctx echo.Context, request {{Types}}Put{{.model.Name}}IdRequestObject) ({{Types}}Put{{.model.Name}}IdResponseObject, error) {
@@ -85,5 +86,5 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}Id(ctx echo.Co
   if err := c.repository.Update(ctx.Request().Context(), update); err != nil {
     return nil, err
   }
-  return nil, nil
+  return {{Types}}Put{{.model.Name}}Id204Response{}, nil
 }

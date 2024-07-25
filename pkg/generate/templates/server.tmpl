@@ -6,8 +6,6 @@ import (
   {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 
-var _ {{Types}}StrictServerInterface = (*Server)(nil)
-
 type Server struct {
   {{range .metadatas}}{{.Name}}Controller
   {{end}}
