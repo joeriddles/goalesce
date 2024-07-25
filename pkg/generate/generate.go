@@ -12,6 +12,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -84,7 +85,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		}
 	}
 
-	if err := g.generateOpenApiBase(t, metadatas); err != nil {
+	if err := g.generateOpenApiBase(metadatas); err != nil {
 		return err
 	}
 
@@ -114,6 +115,10 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	}
 
 	for _, metadata := range metadatas {
+		if slices.Contains(g.cfg.ExcludeModels, metadata.Name) {
+			continue
+		}
+
 		if err := g.generateController(t, metadata); err != nil {
 			return err
 		}
@@ -125,9 +130,16 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		}
 	}
 
-	if err := g.generateServer(t, metadatas); err != nil {
+	filteredMetadatas := []*entity.GormModelMetadata{}
+	for _, metadata := range metadatas {
+		if !slices.Contains(g.cfg.ExcludeModels, metadata.Name) {
+			filteredMetadatas = append(filteredMetadatas, metadata)
+		}
+	}
+	if err := g.generateServer(t, filteredMetadatas); err != nil {
 		return err
 	}
+
 	if err := g.generateMain(t); err != nil {
 		return err
 	}
@@ -181,7 +193,7 @@ func (g *generator) combineOpenApiFiles() error {
 	return nil
 }
 
-func (g *generator) generateOpenApiBase(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+func (g *generator) generateOpenApiBase(metadatas []*entity.GormModelMetadata) error {
 	fp := filepath.Join(g.cfg.OutputFile, "openapi_base.gen.yaml")
 	f, err := os.Create(fp)
 	if err != nil {
@@ -189,39 +201,51 @@ func (g *generator) generateOpenApiBase(t *template.Template, metadatas []*entit
 	}
 	defer f.Close()
 
+	var doc *openapi3.T
+
 	if g.cfg.OpenApiFile != "" {
 		loader := openapi3.NewLoader()
-		doc, err := loader.LoadFromFile(g.cfg.OpenApiFile)
+		doc, err = loader.LoadFromFile(g.cfg.OpenApiFile)
 		if err != nil {
-			return err
-		}
-
-		for _, metadata := range metadatas {
-			doc.Paths.Set(fmt.Sprintf("/%v/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
-				Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1", utils.ToSnakeCase(metadata.Name)),
-			})
-			doc.Paths.Set(fmt.Sprintf("/%v/{id}/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
-				Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1%%7Bid%%7D~1", utils.ToSnakeCase(metadata.Name)),
-			})
-		}
-
-		if err := doc.Paths.Validate(context.Background()); err != nil {
-			return err
-		}
-
-		yamlContent, err := yaml.Marshal(doc)
-		if err != nil {
-			return err
-		}
-
-		if _, err = f.Write(yamlContent); err != nil {
 			return err
 		}
 	} else {
-		w := bufio.NewWriter(f)
-		t.ExecuteTemplate(w, "openapi_base.yaml", metadatas)
-		w.Flush()
+		doc = &openapi3.T{
+			OpenAPI: "3.0.0",
+			Info: &openapi3.Info{
+				Version: "1.0.0",
+				Title:   "Generated API",
+			},
+			Paths: openapi3.NewPaths(),
+		}
 	}
+
+	for _, metadata := range metadatas {
+		if slices.Contains(g.cfg.ExcludeModels, metadata.Name) {
+			continue
+		}
+
+		doc.Paths.Set(fmt.Sprintf("/%v/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
+			Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1", utils.ToSnakeCase(metadata.Name)),
+		})
+		doc.Paths.Set(fmt.Sprintf("/%v/{id}/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
+			Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1%%7Bid%%7D~1", utils.ToSnakeCase(metadata.Name)),
+		})
+	}
+
+	if err := doc.Paths.Validate(context.Background()); err != nil {
+		return err
+	}
+
+	yamlContent, err := yaml.Marshal(doc)
+	if err != nil {
+		return err
+	}
+
+	if _, err = f.Write(yamlContent); err != nil {
+		return err
+	}
+
 	return nil
 }
 

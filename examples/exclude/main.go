@@ -1,4 +1,4 @@
-package cars
+package exclude
 
 import (
 	"gorm.io/gorm"

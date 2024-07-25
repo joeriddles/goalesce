@@ -1,4 +1,4 @@
-package cars
+package echo
 
 import (
 	"gorm.io/gorm"

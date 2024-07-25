@@ -111,21 +111,20 @@ func Test_GenerateExistingYaml(t *testing.T) {
 	require.NoError(t, err)
 }
 
-// TODO(joeriddles): implement exclude
-// func Test_GenerateExclude(t *testing.T) {
-// 	cfg := &config.Config{
-// 		InputFolderPath: "../../examples/exclude",
-// 		OutputFile:      "../../examples/exclude/generated",
-// 		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
-// 		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/yaml",
-// 		ClearOutputDir:  true,
-// 		PruneYaml:       true,
-// 		ExcludeModels: []string{
-// 			"Manufacturer",
-// 			"Model",
-// 		},
-// 	}
-// 	require.NoError(t, cfg.Validate())
-// 	err := run(cfg)
-// 	require.NoError(t, err)
-// }
+func Test_GenerateExclude(t *testing.T) {
+	cfg := &config.Config{
+		InputFolderPath: "../../examples/exclude",
+		OutputFile:      "../../examples/exclude/generated",
+		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen/examples/exclude",
+		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/exclude",
+		ClearOutputDir:  true,
+		PruneYaml:       true,
+		ExcludeModels: []string{
+			"Manufacturer",
+			"Model",
+		},
+	}
+	require.NoError(t, cfg.Validate())
+	err := run(cfg)
+	require.NoError(t, err)
+}
