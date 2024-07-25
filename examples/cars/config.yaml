@@ -1,4 +1,4 @@
-input_folder_path: "../../examples/cars"
+input_folder_path: "./"
 output_file_path: "./generated/cars"
 module_name: "github.com/joeriddles/gorm-oapi-codegen"
 models_package: "github.com/joeriddles/gorm-oapi-codegen/examples/cars"

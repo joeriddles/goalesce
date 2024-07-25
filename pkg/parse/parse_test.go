@@ -5,13 +5,15 @@ import (
 	"log"
 	"testing"
 
+	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestParse_Basic(t *testing.T) {
-	parser := NewParser(log.Default(), false)
+	cfg := &config.Config{AllowCustomModels: false}
+	parser := NewParser(log.Default(), cfg)
 	actual, err := parser.Parse("../../examples/basic/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(actual))
@@ -54,7 +56,8 @@ func TestParse_Basic(t *testing.T) {
 }
 
 func TestParse_Cars(t *testing.T) {
-	parser := NewParser(log.Default(), false)
+	cfg := &config.Config{AllowCustomModels: false}
+	parser := NewParser(log.Default(), cfg)
 	actual, err := parser.Parse("../../examples/cars/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 5, len(actual))
@@ -141,20 +144,9 @@ func TestParse_Cars(t *testing.T) {
 	// TODO(joeriddles) assert all models in cars/main.go...
 }
 
-func assertJsonEq(t *testing.T, expected any, actual any) {
-	actualBytes, err := json.Marshal(actual)
-	require.NoError(t, err)
-	actualJson := string(actualBytes)
-
-	expectedBytes, err := json.Marshal(expected)
-	require.NoError(t, err)
-	expectedJson := string(expectedBytes)
-
-	assert.JSONEq(t, expectedJson, actualJson)
-}
-
 func TestParse_Custom(t *testing.T) {
-	parser := NewParser(log.Default(), true)
+	cfg := &config.Config{AllowCustomModels: true}
+	parser := NewParser(log.Default(), cfg)
 	actual, err := parser.Parse("../../examples/custom/main.go")
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(actual))
@@ -192,4 +184,16 @@ func TestParse_Custom(t *testing.T) {
 	}
 
 	assertJsonEq(t, expected, &actual[0])
+}
+
+func assertJsonEq(t *testing.T, expected any, actual any) {
+	actualBytes, err := json.Marshal(actual)
+	require.NoError(t, err)
+	actualJson := string(actualBytes)
+
+	expectedBytes, err := json.Marshal(expected)
+	require.NoError(t, err)
+	expectedJson := string(expectedBytes)
+
+	assert.JSONEq(t, expectedJson, actualJson)
 }

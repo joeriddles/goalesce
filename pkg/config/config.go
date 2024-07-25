@@ -20,6 +20,7 @@ type Config struct {
 	OpenApiFile       string                 `yaml:"openapi_file"`
 	ServerCodegen     *codegen.Configuration `yaml:"server_codegen,omitempty"`
 	ModelsCodegen     *codegen.Configuration `yaml:"models_codegen,omitempty"`
+	ExcludeModels     []string               `yaml:"exclude_paths,omitempty"`
 }
 
 func (o *Config) Validate() error {

@@ -98,7 +98,7 @@ func run(cfg *config.Config) error {
 	}
 
 	logger := log.Default()
-	parser := parse.NewParser(logger, cfg.AllowCustomModels)
+	parser := parse.NewParser(logger, cfg)
 
 	metadatas := []*entity.GormModelMetadata{}
 	for _, entry := range entries {

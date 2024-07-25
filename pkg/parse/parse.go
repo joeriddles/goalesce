@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"log"
 
+	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
 	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
 )
 
@@ -21,14 +22,14 @@ type Parser interface {
 }
 
 type parser struct {
-	logger            *log.Logger
-	allowCustomModels bool
+	logger *log.Logger
+	cfg    *config.Config
 }
 
-func NewParser(logger *log.Logger, allowCustomModels bool) Parser {
+func NewParser(logger *log.Logger, cfg *config.Config) Parser {
 	return &parser{
-		logger:            logger,
-		allowCustomModels: allowCustomModels,
+		logger: logger,
+		cfg:    cfg,
 	}
 }
 
@@ -36,7 +37,10 @@ func NewParser(logger *log.Logger, allowCustomModels bool) Parser {
 func (p *parser) Parse(filepath string) ([]*entity.GormModelMetadata, error) {
 	fset := token.NewFileSet()
 
-	node, err := goparser.ParseFile(fset, filepath, nil, goparser.SkipObjectResolution) // ParseComments
+	var node *ast.File
+	var err error
+
+	node, err = goparser.ParseFile(fset, filepath, nil, goparser.SkipObjectResolution) // ParseComments
 	if err != nil {
 		return nil, err
 	}
@@ -46,23 +50,25 @@ func (p *parser) Parse(filepath string) ([]*entity.GormModelMetadata, error) {
 	ast.Inspect(node, func(n ast.Node) bool {
 		switch x := n.(type) {
 		case *ast.TypeSpec:
-			metadata, err := p.parseGormModel(x)
-			if err != nil {
-				panic(err)
+			metadata, _err := p.parseGormModel(x)
+			if _err != nil {
+				err = _err
 			}
-			metadatas = append(metadatas, metadata)
+			if metadata != nil {
+				metadatas = append(metadatas, metadata)
+			}
 		}
 		return true
 	})
 
-	return metadatas, nil
+	return metadatas, err
 }
 
 // Parse metadata about the GORM model node
 func (p *parser) parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, error) {
 	if !p.checkIsGormModel(node) {
 		msg := fmt.Sprintf("%v does not inherit from gorm.Model", node.Name.Name)
-		if p.allowCustomModels {
+		if p.cfg.AllowCustomModels {
 			p.logger.Print(msg)
 		} else {
 			return nil, errors.New(msg)
