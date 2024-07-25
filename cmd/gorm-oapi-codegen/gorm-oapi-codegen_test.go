@@ -13,7 +13,7 @@ import (
 func Test_Basic(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/basic",
-		OutputFile:      "./generated/basic",
+		OutputFile:      "../../examples/basic/generated",
 		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
 		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/basic",
 		ClearOutputDir:  true,
@@ -26,7 +26,7 @@ func Test_Basic(t *testing.T) {
 func Test_Cars(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/cars",
-		OutputFile:      "./generated/cars",
+		OutputFile:      "../../examples/cars/generated",
 		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
 		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/cars",
 		ClearOutputDir:  true,
@@ -39,7 +39,7 @@ func Test_Cars(t *testing.T) {
 func Test_Custom(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath:   "../../examples/custom",
-		OutputFile:        "./generated/custom",
+		OutputFile:        "../../examples/custom/generated",
 		ModuleName:        "github.com/joeriddles/gorm-oapi-codegen",
 		ModelsPkg:         "github.com/joeriddles/gorm-oapi-codegen/examples/custom",
 		AllowCustomModels: true,
@@ -53,7 +53,7 @@ func Test_Custom(t *testing.T) {
 func Test_Circular(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath:   "../../examples/circular",
-		OutputFile:        "./generated/circular",
+		OutputFile:        "../../examples/circular/generated",
 		ModuleName:        "github.com/joeriddles/gorm-oapi-codegen",
 		ModelsPkg:         "github.com/joeriddles/gorm-oapi-codegen/examples/circular",
 		AllowCustomModels: true,
@@ -66,10 +66,10 @@ func Test_Circular(t *testing.T) {
 
 func Test_GenerateEcho(t *testing.T) {
 	cfg := &config.Config{
-		InputFolderPath: "../../examples/cars",
-		OutputFile:      "./generated/echo",
+		InputFolderPath: "../../examples/echo",
+		OutputFile:      "../../examples/echo/generated",
 		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
-		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/cars",
+		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/echo",
 		ClearOutputDir:  true,
 		PruneYaml:       true,
 		ModelsCodegen: &codegen.Configuration{
@@ -95,7 +95,7 @@ func Test_GenerateEcho(t *testing.T) {
 func Test_GenerateExistingYaml(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/yaml",
-		OutputFile:      "./generated/yaml",
+		OutputFile:      "../../examples/yaml/generated",
 		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen",
 		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/yaml",
 		ClearOutputDir:  true,
