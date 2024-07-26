@@ -4,6 +4,8 @@
 
 ## Features
 - Generate [OpenAPI YAML](https://swagger.io/specification/) files from [GORM](https://gorm.io/) model types
+- Generate CRUD paths for each GORM model
+- Generate controllers, mappers, and repositories for each GORM model
 
 ## Install
 ```shell
