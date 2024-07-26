@@ -11,15 +11,10 @@ import (
 // TODO(joeriddles): assert golden files
 
 func Test_Basic(t *testing.T) {
-	cfg := &config.Config{
-		InputFolderPath: "../../examples/basic/model",
-		OutputFile:      "../../examples/basic/generated",
-		ModuleName:      "github.com/joeriddles/goalesce/examples/basic",
-		ModelsPkg:       "github.com/joeriddles/goalesce/examples/basic/model",
-		ClearOutputDir:  true,
-	}
-	require.NoError(t, cfg.Validate())
-	err := run(cfg)
+	cfg, err := config.FromYamlFile("../../examples/basic/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
 	require.NoError(t, err)
 }
 
@@ -37,16 +32,10 @@ func Test_Cars(t *testing.T) {
 }
 
 func Test_Custom(t *testing.T) {
-	cfg := &config.Config{
-		InputFolderPath:   "../../examples/custom",
-		OutputFile:        "../../examples/custom/generated",
-		ModuleName:        "github.com/joeriddles/goalesce/examples/custom",
-		ModelsPkg:         "github.com/joeriddles/goalesce/examples/custom",
-		AllowCustomModels: true,
-		ClearOutputDir:    true,
-	}
-	require.NoError(t, cfg.Validate())
-	err := run(cfg)
+	cfg, err := config.FromYamlFile("../../examples/custom/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
 	require.NoError(t, err)
 }
 

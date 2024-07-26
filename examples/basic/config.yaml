@@ -1,0 +1,5 @@
+input_folder_path: ./model
+output_file_path: ./generated
+module_name: github.com/joeriddles/goalesce/examples/basic
+models_package: github.com/joeriddles/goalesce/examples/basic/model
+clear_output_dir: true

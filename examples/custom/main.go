@@ -1,15 +1,15 @@
-package custom
+package main
 
 import (
-	"time"
-
-	"gorm.io/gorm"
+	"github.com/joeriddles/goalesce/examples/custom/model"
+	"gorm.io/gen"
 )
 
-// Note: this does not inherit from gorm.Model
-type Custom struct {
-	ID        int64          `gorm:"column:id;type:bigint;primaryKey;autoIncrement:true" json:"id"`
-	CreatedAt time.Time      `gorm:"column:created_at;type:timestamp with time zone" json:"created_at"`
-	UpdatedAt time.Time      `gorm:"column:updated_at;type:timestamp with time zone" json:"updated_at"`
-	DeletedAt gorm.DeletedAt `gorm:"column:deleted_at;type:timestamp with time zone" json:"deleted_at"`
+func main() {
+	g := gen.NewGenerator(gen.Config{
+		OutPath: "query",
+		Mode:    gen.WithoutContext | gen.WithQueryInterface,
+	})
+	g.ApplyBasic(model.Custom{})
+	g.Execute()
 }

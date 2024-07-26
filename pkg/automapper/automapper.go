@@ -58,7 +58,7 @@ func (m *autoMapper[F, T]) mapStruct(src any, dst any) {
 		if dstField.Kind() == reflect.Invalid {
 			// If the names of the fields are different between the from and to types,
 			// rely on the ordering of the fields instead
-			dstField = dstVal.Field(i)
+			dstField = dstVal.Field(i) // TODO(joeriddles): remove this by index, it's seems hacky...
 		}
 
 		// if srcField.Kind() == reflect.Struct && dstField.Kind() == reflect.Struct {

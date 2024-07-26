@@ -26,15 +26,15 @@ func (s *Server) Post{{.Name}}(ctx context.Context, request {{Types}}Post{{.Name
   return s.{{.Name}}Controller.Post{{.Name}}(ctx, request)
 }
 
-func (s *Server) Delete{{.Name}}Id(ctx context.Context, request {{Types}}Delete{{.Name}}IdRequestObject) ({{Types}}Delete{{.Name}}IdResponseObject, error) {
-  return s.{{.Name}}Controller.Delete{{.Name}}Id(ctx, request)
+func (s *Server) Delete{{.Name}}ID(ctx context.Context, request {{Types}}Delete{{.Name}}IDRequestObject) ({{Types}}Delete{{.Name}}IDResponseObject, error) {
+  return s.{{.Name}}Controller.Delete{{.Name}}ID(ctx, request)
 }
 
-func (s *Server) Get{{.Name}}Id(ctx context.Context, request {{Types}}Get{{.Name}}IdRequestObject) ({{Types}}Get{{.Name}}IdResponseObject, error) {
-  return s.{{.Name}}Controller.Get{{.Name}}Id(ctx, request)
+func (s *Server) Get{{.Name}}ID(ctx context.Context, request {{Types}}Get{{.Name}}IDRequestObject) ({{Types}}Get{{.Name}}IDResponseObject, error) {
+  return s.{{.Name}}Controller.Get{{.Name}}ID(ctx, request)
 }
 
-func (s *Server) Put{{.Name}}Id(ctx context.Context, request {{Types}}Put{{.Name}}IdRequestObject) ({{Types}}Put{{.Name}}IdResponseObject, error) {
-  return s.{{.Name}}Controller.Put{{.Name}}Id(ctx, request)
+func (s *Server) Put{{.Name}}ID(ctx context.Context, request {{Types}}Put{{.Name}}IDRequestObject) ({{Types}}Put{{.Name}}IDResponseObject, error) {
+  return s.{{.Name}}Controller.Put{{.Name}}ID(ctx, request)
 }
 {{end}}

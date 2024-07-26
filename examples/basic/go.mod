@@ -5,8 +5,8 @@ go 1.20
 replace github.com/joeriddles/goalesce => ../..
 
 require (
-	github.com/getkin/kin-openapi v0.124.0
-	github.com/joeriddles/goalesce v0.0.0-20240724201221-96eba2527966
+	github.com/getkin/kin-openapi v0.126.0
+	github.com/joeriddles/goalesce v0.0.0-00010101000000-000000000000
 	github.com/oapi-codegen/runtime v1.1.1
 	golang.org/x/text v0.16.0
 	gorm.io/gen v0.3.26

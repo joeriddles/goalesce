@@ -21,7 +21,7 @@ import (
 	"github.com/joeriddles/goalesce/pkg/entity"
 	"github.com/joeriddles/goalesce/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
+	codegen_util "github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 	"golang.org/x/tools/imports"
 	"gopkg.in/yaml.v2"
 )
@@ -119,7 +119,10 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	swagger, err := util.LoadSwagger(filepath.Join(g.cfg.OutputFile, "openapi.yaml"))
+	g.cfg.TypesCodegen.Configuration.OutputOptions.NameNormalizer = "ToCamelCaseWithInitialisms"
+	g.cfg.ServerCodegen.Configuration.OutputOptions.NameNormalizer = "ToCamelCaseWithInitialisms"
+
+	swagger, err := codegen_util.LoadSwagger(filepath.Join(g.cfg.OutputFile, "openapi.yaml"))
 	if err != nil {
 		return err
 	}

@@ -11,9 +11,9 @@ import (
 type {{.model.Name}}Controller interface {
   Get{{.model.Name}}(ctx context.Context, request {{Types}}Get{{.model.Name}}RequestObject) ({{Types}}Get{{.model.Name}}ResponseObject, error)
   Post{{.model.Name}}(ctx context.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error)
-  Delete{{.model.Name}}Id(ctx context.Context, request {{Types}}Delete{{.model.Name}}IdRequestObject) ({{Types}}Delete{{.model.Name}}IdResponseObject, error)
-  Get{{.model.Name}}Id(ctx context.Context, request {{Types}}Get{{.model.Name}}IdRequestObject) ({{Types}}Get{{.model.Name}}IdResponseObject, error)
-  Put{{.model.Name}}Id(ctx context.Context, request {{Types}}Put{{.model.Name}}IdRequestObject) ({{Types}}Put{{.model.Name}}IdResponseObject, error)
+  Delete{{.model.Name}}ID(ctx context.Context, request {{Types}}Delete{{.model.Name}}IDRequestObject) ({{Types}}Delete{{.model.Name}}IDResponseObject, error)
+  Get{{.model.Name}}ID(ctx context.Context, request {{Types}}Get{{.model.Name}}IDRequestObject) ({{Types}}Get{{.model.Name}}IDResponseObject, error)
+  Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error)
 }
 
 type {{.model.Name|ToCamelCase}}Controller struct {
@@ -61,15 +61,15 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx context.
   return {{Types}}Post{{.model.Name}}201JSONResponse(*apiModel), nil
 }
 
-func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}Id(ctx context.Context, request {{Types}}Delete{{.model.Name}}IdRequestObject) ({{Types}}Delete{{.model.Name}}IdResponseObject, error) {
-  if err := c.repository.Delete(ctx, request.Id); err != nil {
+func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}ID(ctx context.Context, request {{Types}}Delete{{.model.Name}}IDRequestObject) ({{Types}}Delete{{.model.Name}}IDResponseObject, error) {
+  if err := c.repository.Delete(ctx, request.ID); err != nil {
     return nil, err
   }
-  return {{Types}}Delete{{.model.Name}}Id204Response{}, nil
+  return {{Types}}Delete{{.model.Name}}ID204Response{}, nil
 }
 
-func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}Id(ctx context.Context, request {{Types}}Get{{.model.Name}}IdRequestObject) ({{Types}}Get{{.model.Name}}IdResponseObject, error) {
-  model, err := c.repository.Get(ctx, request.Id)
+func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx context.Context, request {{Types}}Get{{.model.Name}}IDRequestObject) ({{Types}}Get{{.model.Name}}IDResponseObject, error) {
+  model, err := c.repository.Get(ctx, request.ID)
   if err != nil {
     return nil, err
   }
@@ -77,16 +77,16 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}Id(ctx context
   if err != nil {
     return nil, err
   }
-  return {{Types}}Get{{.model.Name}}Id200JSONResponse(*apiModel), err
+  return {{Types}}Get{{.model.Name}}ID200JSONResponse(*apiModel), err
 }
 
-func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}Id(ctx context.Context, request {{Types}}Put{{.model.Name}}IdRequestObject) ({{Types}}Put{{.model.Name}}IdResponseObject, error) {
+func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {
   update, err := c.mapper.MapUpdate(*request.Body)
   if err != nil {
     return nil, err
   }
-  if err := c.repository.Update(ctx, request.Id, update); err != nil {
+  if err := c.repository.Update(ctx, request.ID, update); err != nil {
     return nil, err
   }
-  return {{Types}}Put{{.model.Name}}Id204Response{}, nil
+  return {{Types}}Put{{.model.Name}}ID204Response{}, nil
 }
