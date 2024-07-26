@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"golang.org/x/mod/modfile"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -60,7 +61,7 @@ func ToPascalCase(s string) string {
 }
 
 // FindGoMod searches upwards from the given path for a go.mod file
-func FindGoMod(startPath string) (string, error) {
+func FindGoMod(startPath string, module string) (string, error) {
 	absPath, err := filepath.Abs(startPath)
 	if err != nil {
 		return "", err
@@ -69,7 +70,18 @@ func FindGoMod(startPath string) (string, error) {
 	for {
 		goModPath := filepath.Join(absPath, "go.mod")
 		if _, err := os.Stat(goModPath); err == nil {
-			return goModPath, nil
+			goModBytes, err := os.ReadFile(goModPath)
+			if err != nil {
+				return "", err
+			}
+
+			goModFile, err := modfile.Parse(goModPath, goModBytes, nil)
+			if err == nil {
+				if goModFile.Module.Mod.Path == module {
+					return goModPath, nil
+				}
+				// If it's not the right module, keep looking
+			}
 		}
 
 		// Move up one directory level

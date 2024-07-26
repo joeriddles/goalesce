@@ -5,7 +5,8 @@ import (
   "context"
 
   "github.com/labstack/echo/v4"
-  "{{.repositoryImportPath}}"
+
+  repository "{{.repositoryImportPath}}"
   {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 

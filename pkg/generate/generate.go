@@ -42,7 +42,7 @@ type generator struct {
 }
 
 func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
-	modulePath, err := utils.FindGoMod(cfg.OutputFile)
+	modulePath, err := utils.FindGoMod(cfg.OutputFile, cfg.ModuleName)
 	if err != nil {
 		return nil, err
 	}
@@ -71,8 +71,7 @@ func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 		if err != nil {
 			return nil, err
 		}
-		pkg := filepath.Join(cfg.ModuleName, relPkg)
-		repositoryPackage = filepath.Dir(pkg) // remove filename
+		repositoryPackage = filepath.Join(cfg.ModuleName, relPkg)
 	}
 
 	return &generator{
@@ -413,7 +412,7 @@ func (g *generator) generateGo(t *template.Template, fp string, template string,
 	code = re.ReplaceAll(code, []byte("$1"))
 
 	// Format and fix missing imports
-	code, err = imports.Process(fp, code, &imports.Options{})
+	code, err = imports.Process(fp, code, &imports.Options{FormatOnly: true})
 	if err != nil {
 		return err
 	}

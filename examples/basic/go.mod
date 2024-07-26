@@ -9,7 +9,9 @@ require (
 	github.com/joeriddles/goalesce v0.0.0-20240724201221-96eba2527966
 	github.com/oapi-codegen/runtime v1.1.1
 	golang.org/x/text v0.16.0
+	gorm.io/gen v0.3.26
 	gorm.io/gorm v1.25.11
+	gorm.io/plugin/dbresolver v1.5.2
 )
 
 require (
@@ -32,7 +34,5 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gorm.io/datatypes v1.2.1 // indirect
 	gorm.io/driver/mysql v1.5.7 // indirect
-	gorm.io/gen v0.3.26 // indirect
 	gorm.io/hints v1.1.2 // indirect
-	gorm.io/plugin/dbresolver v1.5.2 // indirect
 )
