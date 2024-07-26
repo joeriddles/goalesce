@@ -412,7 +412,7 @@ func (g *generator) generateGo(t *template.Template, fp string, template string,
 	code = re.ReplaceAll(code, []byte("$1"))
 
 	// Format and fix missing imports
-	code, err = imports.Process(fp, code, &imports.Options{FormatOnly: true})
+	code, err = imports.Process(fp, code, &imports.Options{})
 	if err != nil {
 		return err
 	}
