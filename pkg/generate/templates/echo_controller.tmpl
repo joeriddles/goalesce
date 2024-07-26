@@ -86,7 +86,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}Id(ctx echo.Co
   if err != nil {
     return nil, err
   }
-  if err := c.repository.Update(ctx.Request().Context(), update); err != nil {
+  if err := c.repository.Update(ctx.Request().Context(), request.Id, update); err != nil {
     return nil, err
   }
   return {{Types}}Put{{.model.Name}}Id204Response{}, nil
