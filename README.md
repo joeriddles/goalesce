@@ -1,16 +1,16 @@
-# `gorm-oapi-codegen`
+# Goalesce
 
-`gorm-oapi-codegen` is a command-line tool to generate OpenAPI CRUD routes from GORM models.
+`goalesce` is a command-line tool to generate OpenAPI CRUD routes from GORM models.
 
 ## Install
 ```shell
-$ go install github.com/joeriddles/gorm-oapi-codegen/cmd/gorm-oapi-codegen@latest
+$ go install github.com/joeriddles/goalesce/cmd/goalesce@latest
 ```
 
 ## Usage
-`gorm-oapi-codegen` is largely configured using a YAML configuration file.
+`goalesce` is largely configured using a YAML configuration file.
 
 Example
 ```shell
-$ gorm-oapi-codegen ./pkg/model
+$ goalesce ./pkg/model
 ```

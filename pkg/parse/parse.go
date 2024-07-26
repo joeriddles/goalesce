@@ -8,8 +8,8 @@ import (
 	"go/token"
 	"log"
 
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
+	"github.com/joeriddles/goalesce/pkg/config"
+	"github.com/joeriddles/goalesce/pkg/entity"
 )
 
 var (

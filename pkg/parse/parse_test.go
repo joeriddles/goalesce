@@ -5,8 +5,8 @@ import (
 	"log"
 	"testing"
 
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
+	"github.com/joeriddles/goalesce/pkg/config"
+	"github.com/joeriddles/goalesce/pkg/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -27,22 +27,26 @@ func TestParse_Basic(t *testing.T) {
 		IsGormModelEmbedded: true,
 		Fields: []*entity.GormModelField{
 			{
-				Name: "Model.ID",
-				Type: "uint",
-				Tag:  &expectedIdTag,
+				Name:                "ID",
+				IsGormModelEmbedded: true,
+				Type:                "uint",
+				Tag:                 &expectedIdTag,
 			},
 			{
-				Name: "Model.CreatedAt",
-				Type: "time.Time",
+				Name:                "CreatedAt",
+				IsGormModelEmbedded: true,
+				Type:                "time.Time",
 			},
 			{
-				Name: "Model.UpdatedAt",
-				Type: "time.Time",
+				Name:                "UpdatedAt",
+				IsGormModelEmbedded: true,
+				Type:                "time.Time",
 			},
 			{
-				Name: "Model.DeletedAt",
-				Type: "gorm.DeletedAt",
-				Tag:  &expectedDeletedAtTag,
+				Name:                "DeletedAt",
+				IsGormModelEmbedded: true,
+				Type:                "gorm.DeletedAt",
+				Tag:                 &expectedDeletedAtTag,
 			},
 			{
 				Name: "Name",
@@ -70,22 +74,26 @@ func TestParse_Cars(t *testing.T) {
 		IsGormModelEmbedded: true,
 		Fields: []*entity.GormModelField{
 			{
-				Name: "Model.ID",
-				Type: "uint",
-				Tag:  &expectedIdTag,
+				Name:                "ID",
+				IsGormModelEmbedded: true,
+				Type:                "uint",
+				Tag:                 &expectedIdTag,
 			},
 			{
-				Name: "Model.CreatedAt",
-				Type: "time.Time",
+				Name:                "CreatedAt",
+				IsGormModelEmbedded: true,
+				Type:                "time.Time",
 			},
 			{
-				Name: "Model.UpdatedAt",
-				Type: "time.Time",
+				Name:                "UpdatedAt",
+				IsGormModelEmbedded: true,
+				Type:                "time.Time",
 			},
 			{
-				Name: "Model.DeletedAt",
-				Type: "gorm.DeletedAt",
-				Tag:  &expectedDeletedAtTag,
+				Name:                "DeletedAt",
+				IsGormModelEmbedded: true,
+				Type:                "gorm.DeletedAt",
+				Tag:                 &expectedDeletedAtTag,
 			},
 			{
 				Name: "Name",
@@ -103,22 +111,26 @@ func TestParse_Cars(t *testing.T) {
 		IsGormModelEmbedded: true,
 		Fields: []*entity.GormModelField{
 			{
-				Name: "Model.ID",
-				Type: "uint",
-				Tag:  &expectedIdTag,
+				Name:                "ID",
+				IsGormModelEmbedded: true,
+				Type:                "uint",
+				Tag:                 &expectedIdTag,
 			},
 			{
-				Name: "Model.CreatedAt",
-				Type: "time.Time",
+				Name:                "CreatedAt",
+				IsGormModelEmbedded: true,
+				Type:                "time.Time",
 			},
 			{
-				Name: "Model.UpdatedAt",
-				Type: "time.Time",
+				Name:                "UpdatedAt",
+				IsGormModelEmbedded: true,
+				Type:                "time.Time",
 			},
 			{
-				Name: "Model.DeletedAt",
-				Type: "gorm.DeletedAt",
-				Tag:  &expectedDeletedAtTag,
+				Name:                "DeletedAt",
+				IsGormModelEmbedded: true,
+				Type:                "gorm.DeletedAt",
+				Tag:                 &expectedDeletedAtTag,
 			},
 			{
 				Name: "Name",

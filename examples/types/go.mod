@@ -1,12 +1,12 @@
-module github.com/joeriddles/gorm-oapi-codegen/examples/types
+module github.com/joeriddles/goalesce/examples/types
 
 go 1.20
 
-replace github.com/joeriddles/gorm-oapi-codegen => ../..
+replace github.com/joeriddles/goalesce => ../..
 
 require (
 	github.com/getkin/kin-openapi v0.124.0
-	github.com/joeriddles/gorm-oapi-codegen v0.0.0-20240724201221-96eba2527966
+	github.com/joeriddles/goalesce v0.0.0-20240724201221-96eba2527966
 	github.com/oapi-codegen/runtime v1.1.1
 	golang.org/x/text v0.15.0
 	gorm.io/gorm v1.25.10

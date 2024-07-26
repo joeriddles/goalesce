@@ -8,10 +8,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/generate"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/parse"
+	"github.com/joeriddles/goalesce/pkg/config"
+	"github.com/joeriddles/goalesce/pkg/entity"
+	"github.com/joeriddles/goalesce/pkg/generate"
+	"github.com/joeriddles/goalesce/pkg/parse"
 )
 
 var (
@@ -30,7 +30,7 @@ func main() {
 	flag.BoolVar(&flagPrintUsage, "help", false, "Show this help and exit.")
 	flag.BoolVar(&flagPrintUsage, "h", false, "Same as -help.")
 
-	flag.StringVar(&flagConfigFile, "config", "", "A YAML config file that controls gorm-oapi-codegen behavior.")
+	flag.StringVar(&flagConfigFile, "config", "", "A YAML config file that controls goalesce behavior.")
 	flag.StringVar(&flagOutputFile, "o", "./generated", "Where to output generated code, ./generated/ is default.")
 	flag.StringVar(&flagModuleName, "module", "", "The name of the module the generated code will be part of")
 	flag.StringVar(&flagModelsPkg, "pkg", "", "The name of the package that the GORM models are part of")

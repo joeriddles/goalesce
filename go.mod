@@ -1,4 +1,4 @@
-module github.com/joeriddles/gorm-oapi-codegen
+module github.com/joeriddles/goalesce
 
 go 1.20
 

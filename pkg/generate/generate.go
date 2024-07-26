@@ -17,9 +17,9 @@ import (
 	"text/template"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/entity"
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/utils"
+	"github.com/joeriddles/goalesce/pkg/config"
+	"github.com/joeriddles/goalesce/pkg/entity"
+	"github.com/joeriddles/goalesce/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
 	"golang.org/x/tools/imports"

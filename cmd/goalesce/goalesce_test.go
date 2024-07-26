@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"github.com/joeriddles/gorm-oapi-codegen/pkg/config"
+	"github.com/joeriddles/goalesce/pkg/config"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/stretchr/testify/require"
 )
@@ -14,8 +14,8 @@ func Test_Basic(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/basic",
 		OutputFile:      "../../examples/basic/generated",
-		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen/examples/basic",
-		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/basic",
+		ModuleName:      "github.com/joeriddles/goalesce/examples/basic",
+		ModelsPkg:       "github.com/joeriddles/goalesce/examples/basic",
 		ClearOutputDir:  true,
 	}
 	require.NoError(t, cfg.Validate())
@@ -27,8 +27,8 @@ func Test_Cars(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/cars",
 		OutputFile:      "../../examples/cars/generated",
-		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen/examples/cars",
-		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/cars",
+		ModuleName:      "github.com/joeriddles/goalesce/examples/cars",
+		ModelsPkg:       "github.com/joeriddles/goalesce/examples/cars",
 		ClearOutputDir:  true,
 	}
 	require.NoError(t, cfg.Validate())
@@ -40,8 +40,8 @@ func Test_Custom(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath:   "../../examples/custom",
 		OutputFile:        "../../examples/custom/generated",
-		ModuleName:        "github.com/joeriddles/gorm-oapi-codegen/examples/custom",
-		ModelsPkg:         "github.com/joeriddles/gorm-oapi-codegen/examples/custom",
+		ModuleName:        "github.com/joeriddles/goalesce/examples/custom",
+		ModelsPkg:         "github.com/joeriddles/goalesce/examples/custom",
 		AllowCustomModels: true,
 		ClearOutputDir:    true,
 	}
@@ -54,8 +54,8 @@ func Test_Circular(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath:   "../../examples/circular",
 		OutputFile:        "../../examples/circular/generated",
-		ModuleName:        "github.com/joeriddles/gorm-oapi-codegen/examples/circular",
-		ModelsPkg:         "github.com/joeriddles/gorm-oapi-codegen/examples/circular",
+		ModuleName:        "github.com/joeriddles/goalesce/examples/circular",
+		ModelsPkg:         "github.com/joeriddles/goalesce/examples/circular",
 		AllowCustomModels: true,
 		ClearOutputDir:    true,
 	}
@@ -68,8 +68,8 @@ func Test_GenerateEcho(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/echo",
 		OutputFile:      "../../examples/echo/generated",
-		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen/examples/echo",
-		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/echo",
+		ModuleName:      "github.com/joeriddles/goalesce/examples/echo",
+		ModelsPkg:       "github.com/joeriddles/goalesce/examples/echo",
 		ClearOutputDir:  true,
 		PruneYaml:       true,
 		TypesCodegen: &config.OApiGenConfiguration{
@@ -100,8 +100,8 @@ func Test_GenerateExistingYaml(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/yaml",
 		OutputFile:      "../../examples/yaml/generated",
-		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen/examples/yaml",
-		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/yaml",
+		ModuleName:      "github.com/joeriddles/goalesce/examples/yaml",
+		ModelsPkg:       "github.com/joeriddles/goalesce/examples/yaml",
 		ClearOutputDir:  true,
 		PruneYaml:       true,
 		OpenApiFile:     "../../examples/yaml/openapi.yaml",
@@ -115,8 +115,8 @@ func Test_GenerateExclude(t *testing.T) {
 	cfg := &config.Config{
 		InputFolderPath: "../../examples/exclude",
 		OutputFile:      "../../examples/exclude/generated",
-		ModuleName:      "github.com/joeriddles/gorm-oapi-codegen/examples/exclude",
-		ModelsPkg:       "github.com/joeriddles/gorm-oapi-codegen/examples/exclude",
+		ModuleName:      "github.com/joeriddles/goalesce/examples/exclude",
+		ModelsPkg:       "github.com/joeriddles/goalesce/examples/exclude",
 		ClearOutputDir:  true,
 		PruneYaml:       true,
 		ExcludeModels: []string{

@@ -1,8 +1,8 @@
-module github.com/joeriddles/gorm-oapi-codegen/examples/echo
+module github.com/joeriddles/goalesce/examples/echo
 
 go 1.20
 
-replace github.com/joeriddles/gorm-oapi-codegen => ../..
+replace github.com/joeriddles/goalesce => ../..
 
 require gorm.io/gorm v1.25.10
 
