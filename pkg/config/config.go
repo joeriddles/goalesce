@@ -27,20 +27,24 @@ type Config struct {
 	PruneYaml bool `yaml:"prune_yaml"`
 	// If true, the generated OpenAPI YAML file uses this as its base
 	OpenApiFile string `yaml:"openapi_file"`
-	// oapi-codegen server configuration
-	ServerCodegen *OApiGenConfiguration `yaml:"server_codegen,omitempty"`
-	// oapi-codegen types configuration
-	TypesCodegen *OApiGenConfiguration `yaml:"types_codegen,omitempty"`
 	// Excludes these GORM models from the generated OpenAPI routes
 	ExcludeModels []string `yaml:"exclude_models,omitempty"`
 	// If true, generates a sample main.go file for running the server
 	GenerateMain bool `yaml:"generate_main"`
+
+	// Generated Repository configuration
+	RepositoryConfiguration *RepositoryConfiguration `yaml:"repository,omitempty"`
+
+	// oapi-codegen server configuration
+	ServerCodegen *OApiGenConfiguration `yaml:"server_codegen,omitempty"`
+	// oapi-codegen types configuration
+	TypesCodegen *OApiGenConfiguration `yaml:"types_codegen,omitempty"`
 }
 
 type OApiGenConfiguration struct {
 	codegen.Configuration `yaml:",inline"`
 
-	// OutputFile is the filepath to output.
+	// OutputFile is the filepath to output
 	OutputFile string `yaml:"output,omitempty"`
 }
 
@@ -74,6 +78,9 @@ func FromYamlFile(fp string) (*Config, error) {
 	}
 	if cfg.TypesCodegen != nil && isRelativeFilepath(cfg.TypesCodegen.OutputFile) {
 		cfg.TypesCodegen.OutputFile = filepath.Join(configDir, cfg.TypesCodegen.OutputFile)
+	}
+	if cfg.RepositoryConfiguration != nil && isRelativeFilepath(cfg.RepositoryConfiguration.OutputFile) {
+		cfg.RepositoryConfiguration.OutputFile = filepath.Join(configDir, cfg.RepositoryConfiguration.OutputFile)
 	}
 
 	if err := cfg.Validate(); err != nil {
@@ -148,6 +155,34 @@ func (o *Config) Validate() error {
 		}
 	}
 
+	if o.RepositoryConfiguration == nil {
+		o.RepositoryConfiguration = &RepositoryConfiguration{
+			OutputFile: filepath.Join(o.OutputFile, "repository"),
+		}
+	}
+	if err := o.RepositoryConfiguration.Validate(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+type RepositoryConfiguration struct {
+	// OutputFile is the folder to output to
+	OutputFile string `yaml:"output,omitempty"`
+	// Custom generated repository template
+	Template *string `yaml:"template,omitempty"`
+}
+
+func (c *RepositoryConfiguration) Validate() error {
+	var errs []error
+	if c.OutputFile == "" {
+		errs = append(errs, errors.New("output must be specified"))
+	}
+	err := errors.Join(errs...)
+	if err != nil {
+		return fmt.Errorf("failed to validate configuration: %w", err)
+	}
 	return nil
 }
 

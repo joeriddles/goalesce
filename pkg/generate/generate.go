@@ -87,7 +87,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	if err := createDirs(
 		g.cfg.OutputFile,
 		filepath.Join(g.cfg.OutputFile, "api"),
-		filepath.Join(g.cfg.OutputFile, "repository"),
+		filepath.Join(g.cfg.RepositoryConfiguration.OutputFile),
 	); err != nil {
 		return err
 	}
@@ -324,11 +324,18 @@ func (g *generator) generateServer(t *template.Template, metadatas []*entity.Gor
 }
 
 func (g *generator) generateRepository(t *template.Template, metadata *entity.GormModelMetadata) error {
-	fp := filepath.Join(g.cfg.OutputFile, "repository", fmt.Sprintf("%v_repository.gen.go", utils.ToSnakeCase(metadata.Name)))
+	filename := fmt.Sprintf("%v_repository.gen.go", utils.ToSnakeCase(metadata.Name))
+	fp := filepath.Join(g.cfg.RepositoryConfiguration.OutputFile, filename)
+
+	template := "repository.tmpl"
+	if g.cfg.RepositoryConfiguration.Template != nil {
+		template = *g.cfg.RepositoryConfiguration.Template
+	}
+
 	return g.generateGo(
 		t,
 		fp,
-		"repository.tmpl",
+		template,
 		map[string]interface{}{
 			"pkg":   g.cfg.ModelsPkg,
 			"model": metadata,
