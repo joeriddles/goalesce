@@ -111,7 +111,7 @@ components:
     Create{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{if .IsGormModelEmbedded}}{{continue}}{{end}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}
@@ -120,12 +120,12 @@ components:
           {{end}}{{end}}
         {{end}}
       required:
-        {{range .Fields}}- {{.Name|ToSnakeCase}}
+        {{range .Fields}}{{if .IsGormModelEmbedded}}{{continue}}{{end}}- {{.Name|ToSnakeCase}}
         {{end}}
     Update{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{if .IsGormModelEmbedded}}{{continue}}{{end}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}

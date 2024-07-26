@@ -21,13 +21,13 @@ type {{.model.Name}}Repository interface {
   Create(
     ctx context.Context,
     {{.model.Name|ToCamelCase}} model.{{.model.Name}},
-  ) error
+  ) (*model.{{.model.Name}}, error)
   
   Update(
     ctx context.Context,
     id int64,
     update map[string]interface{},
-  ) error
+  ) (*model.{{.model.Name}}, error)
   
   Delete(
     ctx context.Context,
@@ -59,16 +59,16 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Get(
 func (r *{{.model.Name|ToCamelCase}}Repository) Create(
   ctx context.Context,
   {{.model.Name|ToCamelCase}} model.{{.model.Name}},
-) error {
-  return nil
+) (*model.{{.model.Name}}, error) {
+  return nil, nil
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Update(
   ctx context.Context,
   id int64,
   update map[string]interface{},
-) error {
-  return nil
+) (*model.{{.model.Name}}, error) {
+  return nil, nil
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Delete(

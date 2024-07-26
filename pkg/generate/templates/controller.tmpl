@@ -51,7 +51,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx context.
   if err != nil {
     return nil, err
   }
-  if err = c.repository.Create(ctx, *model); err != nil {
+  if model, err = c.repository.Create(ctx, *model); err != nil {
     return nil, err
   }
   apiModel, err := c.mapper.MapToApi(*model)
@@ -81,11 +81,12 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx context
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {
+	var err error
   update, err := c.mapper.MapUpdate(*request.Body)
   if err != nil {
     return nil, err
   }
-  if err := c.repository.Update(ctx, request.ID, update); err != nil {
+  if _, err = c.repository.Update(ctx, request.ID, update); err != nil {
     return nil, err
   }
   return {{Types}}Put{{.model.Name}}ID204Response{}, nil

@@ -3,9 +3,11 @@ package automapper
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"gorm.io/gorm"
 )
 
 func TestAutoMapper_int(t *testing.T) {
@@ -168,6 +170,36 @@ func TestAutoMapper_StructNestedPointerType(t *testing.T) {
 	require.NoError(t, err)
 
 	expected := NestedTypePointer2{User: &User2{Name: "Bob"}}
+	assert.Equal(t, expected, to)
+	assertJsonEq(t, expected, to)
+}
+
+type CreateUser struct {
+	CreatedAt time.Time  `json:"created_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
+	ID        int        `json:"id"`
+	Name      string     `json:"name"`
+	UpdatedAt time.Time  `json:"updated_at"`
+}
+
+type ModelUser struct {
+	gorm.Model
+	Name string `gorm:"column:name;"`
+}
+
+func TestAutoMapper_CreateUserToModelUser(t *testing.T) {
+	// Arrange
+	mapper := NewAutoMapper(CreateUser{}, ModelUser{})
+	from := CreateUser{Name: "Bob"}
+	to := ModelUser{}
+
+	// Act
+	err := mapper.MapTo(&from, &to)
+
+	// Assert
+	require.NoError(t, err)
+
+	expected := ModelUser{Name: "Bob"}
 	assert.Equal(t, expected, to)
 	assertJsonEq(t, expected, to)
 }

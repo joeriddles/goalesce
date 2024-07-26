@@ -10,6 +10,7 @@ require (
 	golang.org/x/text v0.15.0
 	golang.org/x/tools v0.21.0
 	gopkg.in/yaml.v2 v2.4.0
+	gorm.io/gorm v1.25.11
 )
 
 require (
@@ -17,6 +18,8 @@ require (
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/invopop/yaml v0.3.1 // indirect
+	github.com/jinzhu/inflection v1.0.0 // indirect
+	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect

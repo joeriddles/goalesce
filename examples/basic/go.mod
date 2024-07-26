@@ -8,6 +8,7 @@ require (
 	github.com/getkin/kin-openapi v0.126.0
 	github.com/joeriddles/goalesce v0.0.0-00010101000000-000000000000
 	github.com/oapi-codegen/runtime v1.1.1
+	github.com/stretchr/testify v1.9.0
 	golang.org/x/text v0.16.0
 	gorm.io/gen v0.3.26
 	gorm.io/gorm v1.25.11
@@ -17,6 +18,7 @@ require (
 require (
 	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/go-openapi/jsonpointer v0.21.0 // indirect
 	github.com/go-openapi/swag v0.23.0 // indirect
 	github.com/go-sql-driver/mysql v1.8.1 // indirect
@@ -28,6 +30,7 @@ require (
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/perimeterx/marshmallow v1.1.5 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
 	golang.org/x/mod v0.19.0 // indirect
 	golang.org/x/sync v0.7.0 // indirect
 	golang.org/x/tools v0.23.0 // indirect

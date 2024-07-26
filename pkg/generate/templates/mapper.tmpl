@@ -16,16 +16,18 @@ type {{.model.Name}}Mapper interface {
 }
 
 type {{.model.Name|ToCamelCase}}Mapper struct {
-  automapper   automapper.AutoMapper[model.{{.model.Name}}, {{Types}}{{.model.Name}}]
-  modelMapper  _Mapper
-	updateMapper _Mapper
+  automapper       automapper.AutoMapper[model.{{.model.Name}}, {{Types}}{{.model.Name}}]
+  createAutomapper automapper.AutoMapper[model.{{.model.Name}}, {{Types}}Create{{.model.Name}}]
+  modelMapper      _Mapper
+	updateMapper     _Mapper
 }
 
 func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
   return &{{.model.Name|ToCamelCase}}Mapper{
-    automapper:   automapper.NewAutoMapper(model.{{.model.Name}}{}, {{Types}}{{.model.Name}}{}),
-    modelMapper:  _NewModelMapper(),
-		updateMapper: _NewUpdateMapper(),
+    automapper:       automapper.NewAutoMapper(model.{{.model.Name}}{}, {{Types}}{{.model.Name}}{}),
+    createAutomapper: automapper.NewAutoMapper(model.{{.model.Name}}{}, {{Types}}Create{{.model.Name}}{}),
+    modelMapper:      _NewModelMapper(),
+		updateMapper:     _NewUpdateMapper(),
   }
 }
 
@@ -43,10 +45,8 @@ func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model model.{{.model.Name}}
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj {{Types}}Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
 	model := &model.{{.model.Name}}{} // TODO: use automapper
-	if err := m.modelMapper.Map(obj, model); err != nil {
-    return nil, err
-  }
-	return model, nil
+  err := m.createAutomapper.MapFrom(&obj, model)
+	return model, err
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj {{Types}}Update{{.model.Name}}) (map[string]interface{}, error) {
