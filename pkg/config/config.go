@@ -79,8 +79,15 @@ func FromYamlFile(fp string) (*Config, error) {
 	if cfg.TypesCodegen != nil && isRelativeFilepath(cfg.TypesCodegen.OutputFile) {
 		cfg.TypesCodegen.OutputFile = filepath.Join(configDir, cfg.TypesCodegen.OutputFile)
 	}
-	if cfg.RepositoryConfiguration != nil && isRelativeFilepath(cfg.RepositoryConfiguration.OutputFile) {
-		cfg.RepositoryConfiguration.OutputFile = filepath.Join(configDir, cfg.RepositoryConfiguration.OutputFile)
+
+	if cfg.RepositoryConfiguration != nil {
+		if isRelativeFilepath(cfg.RepositoryConfiguration.OutputFile) {
+			cfg.RepositoryConfiguration.OutputFile = filepath.Join(configDir, cfg.RepositoryConfiguration.OutputFile)
+		}
+		if cfg.RepositoryConfiguration.Template != nil && isRelativeFilepath(*cfg.RepositoryConfiguration.Template) {
+			templateFp := filepath.Join(configDir, *cfg.RepositoryConfiguration.Template)
+			cfg.RepositoryConfiguration.Template = &templateFp
+		}
 	}
 
 	if err := cfg.Validate(); err != nil {

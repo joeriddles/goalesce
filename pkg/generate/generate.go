@@ -34,10 +34,11 @@ type Generator interface {
 }
 
 type generator struct {
-	logger          *log.Logger
-	cfg             *config.Config
-	relativePkgPath string
-	typesPackage    *string
+	logger            *log.Logger
+	cfg               *config.Config
+	relativePkgPath   string
+	typesPackage      *string
+	repositoryPackage string
 }
 
 func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
@@ -63,11 +64,23 @@ func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 		typesPackage = &pkg
 	}
 
+	var repositoryPackage string = filepath.Join(cfg.ModuleName, relPath, "repository")
+	defaultRepositoryOutputFile := filepath.Join(cfg.OutputFile, "repository")
+	if cfg.RepositoryConfiguration.OutputFile != defaultRepositoryOutputFile {
+		relPkg, err := filepath.Rel(moduleRootPath, cfg.RepositoryConfiguration.OutputFile)
+		if err != nil {
+			return nil, err
+		}
+		pkg := filepath.Join(cfg.ModuleName, relPkg)
+		repositoryPackage = filepath.Dir(pkg) // remove filename
+	}
+
 	return &generator{
-		logger:          logger,
-		cfg:             cfg,
-		relativePkgPath: relPath,
-		typesPackage:    typesPackage,
+		logger:            logger,
+		cfg:               cfg,
+		relativePkgPath:   relPath,
+		typesPackage:      typesPackage,
+		repositoryPackage: repositoryPackage,
 	}, nil
 }
 
@@ -283,7 +296,6 @@ func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity
 
 func (g *generator) generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
-	repositoryImportPath := filepath.Join(g.cfg.ModuleName, g.relativePkgPath, "repository")
 
 	template := "controller.tmpl"
 	if g.cfg.ServerCodegen.Generate.EchoServer {
@@ -297,7 +309,7 @@ func (g *generator) generateController(t *template.Template, metadata *entity.Go
 		map[string]interface{}{
 			"package":              g.cfg.ServerCodegen.PackageName,
 			"typesPackage":         g.typesPackage,
-			"repositoryImportPath": repositoryImportPath,
+			"repositoryImportPath": g.repositoryPackage,
 			"model":                metadata,
 		},
 	)
@@ -326,16 +338,10 @@ func (g *generator) generateServer(t *template.Template, metadatas []*entity.Gor
 func (g *generator) generateRepository(t *template.Template, metadata *entity.GormModelMetadata) error {
 	filename := fmt.Sprintf("%v_repository.gen.go", utils.ToSnakeCase(metadata.Name))
 	fp := filepath.Join(g.cfg.RepositoryConfiguration.OutputFile, filename)
-
-	template := "repository.tmpl"
-	if g.cfg.RepositoryConfiguration.Template != nil {
-		template = *g.cfg.RepositoryConfiguration.Template
-	}
-
 	return g.generateGo(
 		t,
 		fp,
-		template,
+		"repository.tmpl",
 		map[string]interface{}{
 			"pkg":   g.cfg.ModelsPkg,
 			"model": metadata,
@@ -451,7 +457,7 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"Types":          getTypesNamespace,
 	}
 
-	return fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {
+	err := fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("error walking directory %s: %w", path, err)
 		}
@@ -472,6 +478,26 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		}
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	if g.cfg.RepositoryConfiguration.Template != nil {
+		path := *g.cfg.RepositoryConfiguration.Template
+		buf, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("error reading file '%s': %w", path, err)
+		}
+
+		templateName := "repository.tmpl"
+		tmpl := t.New(templateName).Funcs(funcMap)
+		_, err = tmpl.Parse(string(buf))
+		if err != nil {
+			return fmt.Errorf("parsing template '%s': %w", path, err)
+		}
+	}
+
+	return nil
 }
 
 func runNpxCommand(command string, args ...string) (string, error) {

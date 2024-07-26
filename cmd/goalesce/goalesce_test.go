@@ -12,10 +12,10 @@ import (
 
 func Test_Basic(t *testing.T) {
 	cfg := &config.Config{
-		InputFolderPath: "../../examples/basic",
+		InputFolderPath: "../../examples/basic/model",
 		OutputFile:      "../../examples/basic/generated",
 		ModuleName:      "github.com/joeriddles/goalesce/examples/basic",
-		ModelsPkg:       "github.com/joeriddles/goalesce/examples/basic",
+		ModelsPkg:       "github.com/joeriddles/goalesce/examples/basic/model",
 		ClearOutputDir:  true,
 	}
 	require.NoError(t, cfg.Validate())
@@ -139,6 +139,14 @@ func Test_GenerateExclude_Yaml(t *testing.T) {
 
 func Test_GenerateNestedTypes_Yaml(t *testing.T) {
 	cfg, err := config.FromYamlFile("../../examples/types/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
+	require.NoError(t, err)
+}
+
+func Test_Generate_RepositoryConfig(t *testing.T) {
+	cfg, err := config.FromYamlFile("../../examples/repository/config.yaml")
 	require.NoError(t, err)
 
 	err = run(cfg)

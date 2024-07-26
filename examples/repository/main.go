@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/joeriddles/goalesce/examples/basic/model"
+	"github.com/joeriddles/goalesce/examples/repository/model"
 	"gorm.io/gen"
 )
 

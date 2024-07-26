@@ -1,4 +1,4 @@
-module github.com/joeriddles/goalesce/examples/basic
+module github.com/joeriddles/goalesce/examples/repository
 
 go 1.20
 
