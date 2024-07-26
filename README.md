@@ -1,11 +1,14 @@
-# gorm-oapi-codegen
+# `gorm-oapi-codegen`
 
-Generate OpenAPI CRUD routes from GORM models.
+`gorm-oapi-codegen` is a command-line tool to generate OpenAPI CRUD routes from GORM models.
 
-### Install
+## Install
 ```shell
 $ go install github.com/joeriddles/gorm-oapi-codegen/cmd/gorm-oapi-codegen@latest
 ```
+
+## Usage
+`gorm-oapi-codegen` is largely configured using a YAML configuration file.
 
 Example
 ```shell

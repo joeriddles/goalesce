@@ -12,18 +12,29 @@ import (
 )
 
 type Config struct {
-	InputFolderPath   string                `yaml:"input_folder_path"`
-	OutputFile        string                `yaml:"output_file_path"`
-	ModuleName        string                `yaml:"module_name"`
-	ModelsPkg         string                `yaml:"models_package"`
-	ClearOutputDir    bool                  `yaml:"clear_output_dir"`
-	AllowCustomModels bool                  `yaml:"allow_custom_models"`
-	PruneYaml         bool                  `yaml:"prune_yaml"`
-	OpenApiFile       string                `yaml:"openapi_file"`
-	ServerCodegen     *OApiGenConfiguration `yaml:"server_codegen,omitempty"`
-	TypesCodegen      *OApiGenConfiguration `yaml:"types_codegen,omitempty"`
-	ExcludeModels     []string              `yaml:"exclude_models,omitempty"`
-	GenerateMain      bool                  `yaml:"generate_main"`
+	InputFolderPath string `yaml:"input_folder_path"`
+	// Where to output generated code, ./generated/ is default
+	OutputFile string `yaml:"output_file_path"`
+	// The name of the module the generated code will be part of
+	ModuleName string `yaml:"module_name"`
+	// The name of the package that the GORM models are part of
+	ModelsPkg string `yaml:"models_package"`
+	// If true, clears the contents of the output directory before generating new files
+	ClearOutputDir bool `yaml:"clear_output_dir"`
+	// If true, parses classes that do not inherit from gorm.Model
+	AllowCustomModels bool `yaml:"allow_custom_models"`
+	// If true, deletes all model specific YAML files after combining them into a single YAML file
+	PruneYaml bool `yaml:"prune_yaml"`
+	// If true, the generated OpenAPI YAML file uses this as its base
+	OpenApiFile string `yaml:"openapi_file"`
+	// oapi-codegen server configuration
+	ServerCodegen *OApiGenConfiguration `yaml:"server_codegen,omitempty"`
+	// oapi-codegen types configuration
+	TypesCodegen *OApiGenConfiguration `yaml:"types_codegen,omitempty"`
+	// Excludes these GORM models from the generated OpenAPI routes
+	ExcludeModels []string `yaml:"exclude_models,omitempty"`
+	// If true, generates a sample main.go file for running the server
+	GenerateMain bool `yaml:"generate_main"`
 }
 
 type OApiGenConfiguration struct {
