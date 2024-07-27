@@ -78,18 +78,17 @@ func (p *parser) parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, 
 	name := node.Name.Name
 	fields := p.parseGormModelFields(node)
 
-	isGormModelEmbedded := false
-	for _, field := range fields {
-		isGormModelEmbedded = isGormModelEmbedded || field.IsGormModelEmbedded
-		if isGormModelEmbedded {
-			break
-		}
-	}
+	// isGormModelEmbedded := false
+	// for _, field := range fields {
+	// 	isGormModelEmbedded = isGormModelEmbedded || field.IsGormModelEmbedded
+	// 	if isGormModelEmbedded {
+	// 		break
+	// 	}
+	// }
 
 	metadata := &entity.GormModelMetadata{
-		Name:                name,
-		IsGormModelEmbedded: isGormModelEmbedded,
-		Fields:              fields,
+		Name:   name,
+		Fields: fields,
 	}
 	return metadata, nil
 }
@@ -108,10 +107,10 @@ func (p *parser) parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelFie
 
 					fields = append(
 						fields,
-						&entity.GormModelField{Name: "ID", Type: "uint", Tag: &gormModelIdTag, IsGormModelEmbedded: true},
-						&entity.GormModelField{Name: "CreatedAt", Type: "time.Time", IsGormModelEmbedded: true},
-						&entity.GormModelField{Name: "UpdatedAt", Type: "time.Time", IsGormModelEmbedded: true},
-						&entity.GormModelField{Name: "DeletedAt", Type: "gorm.DeletedAt", Tag: &gormModelDeletedAtTag, IsGormModelEmbedded: true},
+						&entity.GormModelField{Name: "ID", Type: "uint", Tag: gormModelIdTag},
+						&entity.GormModelField{Name: "CreatedAt", Type: "time.Time"},
+						&entity.GormModelField{Name: "UpdatedAt", Type: "time.Time"},
+						&entity.GormModelField{Name: "DeletedAt", Type: "gorm.DeletedAt", Tag: gormModelDeletedAtTag},
 					)
 				}
 				break
@@ -120,15 +119,10 @@ func (p *parser) parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelFie
 			fName := f.Names[0].Name // TODO(joeriddles): support multiple names
 			fType := p.parseType(f.Type)
 
-			var fTag *string
-			if f.Tag != nil {
-				fTag = &f.Tag.Value
-			}
-
 			field := &entity.GormModelField{
 				Name: fName,
 				Type: fType,
-				Tag:  fTag,
+				Tag:  f.Tag.Value,
 			}
 			fields = append(fields, field)
 		}
