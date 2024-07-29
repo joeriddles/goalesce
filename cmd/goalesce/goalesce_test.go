@@ -34,16 +34,10 @@ func Test_Custom(t *testing.T) {
 }
 
 func Test_Circular(t *testing.T) {
-	cfg := &config.Config{
-		InputFolderPath:   "../../examples/circular",
-		OutputFile:        "../../examples/circular/generated",
-		ModuleName:        "github.com/joeriddles/goalesce/examples/circular",
-		ModelsPkg:         "github.com/joeriddles/goalesce/examples/circular",
-		AllowCustomModels: true,
-		ClearOutputDir:    true,
-	}
-	require.NoError(t, cfg.Validate())
-	err := run(cfg)
+	cfg, err := config.FromYamlFile("../../examples/circular/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
 	require.NoError(t, err)
 }
 

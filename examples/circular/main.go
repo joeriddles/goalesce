@@ -1,17 +1,18 @@
-package custom
+package main
 
-// Note: this does not inherit from gorm.Model
-// See https://github.com/OAI/OpenAPI-Specification/issues/822
-type Address struct {
-	ID         int64 `gorm:"primaryKey;autoIncrement:true" json:"id"`
-	City       string
-	OccupantID int64
-	Occupant   *Person
-}
+import (
+	"github.com/joeriddles/goalesce/examples/circular/model"
+	"gorm.io/gen"
+)
 
-type Person struct {
-	ID     int64 `gorm:"primaryKey;autoIncrement:true" json:"id"`
-	Name   string
-	HomeID int64
-	Home   *Address
+func main() {
+	g := gen.NewGenerator(gen.Config{
+		OutPath: "query",
+		Mode:    gen.WithoutContext | gen.WithQueryInterface,
+	})
+	g.ApplyBasic(
+		model.Address{},
+		model.Person{},
+	)
+	g.Execute()
 }
