@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"github.com/joeriddles/goalesce/pkg/config"
-	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	"github.com/stretchr/testify/require"
 )
 
@@ -49,34 +48,10 @@ func Test_Circular(t *testing.T) {
 }
 
 func Test_GenerateEcho(t *testing.T) {
-	cfg := &config.Config{
-		InputFolderPath: "../../examples/echo",
-		OutputFile:      "../../examples/echo/generated",
-		ModuleName:      "github.com/joeriddles/goalesce/examples/echo",
-		ModelsPkg:       "github.com/joeriddles/goalesce/examples/echo",
-		ClearOutputDir:  true,
-		PruneYaml:       true,
-		TypesCodegen: &config.OApiGenConfiguration{
-			Configuration: codegen.Configuration{
-				PackageName: "api",
-				Generate: codegen.GenerateOptions{
-					Models: true,
-				},
-			},
-		},
-		ServerCodegen: &config.OApiGenConfiguration{
-			Configuration: codegen.Configuration{
-				PackageName: "api",
-				Generate: codegen.GenerateOptions{
-					EchoServer:   true,
-					Strict:       true,
-					EmbeddedSpec: true,
-				},
-			},
-		},
-	}
-	require.NoError(t, cfg.Validate())
-	err := run(cfg)
+	cfg, err := config.FromYamlFile("../../examples/echo/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
 	require.NoError(t, err)
 }
 

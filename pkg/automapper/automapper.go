@@ -20,7 +20,6 @@ type autoMapper[F any, T any] struct {
 
 func (m *autoMapper[F, T]) MapTo(src *F, dst *T) error {
 	return m.doMap(src, dst)
-
 }
 
 func (m *autoMapper[F, T]) MapFrom(src *T, dst *F) error {
@@ -51,6 +50,8 @@ func (m *autoMapper[F, T]) mapStruct(src any, dst any) error {
 	srcVal := reflect.ValueOf(src).Elem()
 	dstVal := reflect.ValueOf(dst).Elem()
 
+	var err error
+
 	for i := 0; i < srcVal.NumField(); i++ {
 		srcField := srcVal.Field(i)
 		srcFieldType := srcVal.Type().Field(i)
@@ -60,12 +61,14 @@ func (m *autoMapper[F, T]) mapStruct(src any, dst any) error {
 			for j := 0; j < srcFieldVal.NumField(); j++ {
 				nestedSrcField := srcFieldVal.Field(j)
 				nestedSrcFieldType := srcFieldVal.Type().Field(j)
-				err := m.mapField(nestedSrcField, dstVal, nestedSrcFieldType.Name)
+				err = m.mapField(nestedSrcField, dstVal, nestedSrcFieldType.Name)
 				if err != nil {
-					return err
+					break
 				}
 			}
-			continue
+			if err == nil {
+				return nil
+			}
 		}
 
 		err := m.mapField(srcField, dstVal, srcFieldType.Name)
@@ -80,7 +83,7 @@ func (m *autoMapper[F, T]) mapField(srcField reflect.Value, dstVal reflect.Value
 	dstField := dstVal.FieldByName(field)
 	if dstField.Kind() == reflect.Invalid {
 		// Ignore fields that are not on dst
-		return nil
+		return fmt.Errorf("%v does not exist on dst", field)
 	}
 
 	if dstField.IsValid() && dstField.CanSet() {

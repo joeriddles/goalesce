@@ -74,31 +74,6 @@ func TestAutoMapper_StructWithList(t *testing.T) {
 	assertJsonEq(t, expected, to)
 }
 
-type DifferentCase struct {
-	UserId int
-}
-
-type DifferentCase2 struct {
-	UserID int
-}
-
-func TestAutoMapper_StructDifferentCase(t *testing.T) {
-	// Arrange
-	mapper := NewAutoMapper(DifferentCase{}, DifferentCase2{})
-	from := DifferentCase{UserId: 1}
-	to := DifferentCase2{}
-
-	// Act
-	err := mapper.MapTo(&from, &to)
-
-	// Assert
-	require.NoError(t, err)
-
-	expected := DifferentCase2{UserID: 1}
-	assert.Equal(t, expected, to)
-	assertJsonEq(t, expected, to)
-}
-
 type DifferentType struct {
 	UserId int
 }
@@ -187,22 +162,25 @@ type ModelUser struct {
 	Name string `gorm:"column:name;"`
 }
 
-func TestAutoMapper_CreateUserToModelUser(t *testing.T) {
-	// Arrange
-	mapper := NewAutoMapper(CreateUser{}, ModelUser{})
-	from := CreateUser{Name: "Bob"}
-	to := ModelUser{}
+// TODO(joeriddles): remove, AutoMapper should only naively map types/structs,
+// it should not try to map anything with different types, e.g. *time.Time and
+// gorm.DeletedAt.
+// func TestAutoMapper_CreateUserToModelUser(t *testing.T) {
+// 	// Arrange
+// 	mapper := NewAutoMapper(CreateUser{}, ModelUser{})
+// 	from := CreateUser{Name: "Bob"}
+// 	to := ModelUser{}
 
-	// Act
-	err := mapper.MapTo(&from, &to)
+// 	// Act
+// 	err := mapper.MapTo(&from, &to)
 
-	// Assert
-	require.NoError(t, err)
+// 	// Assert
+// 	require.NoError(t, err)
 
-	expected := ModelUser{Name: "Bob"}
-	assert.Equal(t, expected, to)
-	assertJsonEq(t, expected, to)
-}
+// 	expected := ModelUser{Name: "Bob"}
+// 	assert.Equal(t, expected, to)
+// 	assertJsonEq(t, expected, to)
+// }
 
 func assertJsonEq(t *testing.T, expected any, actual any) {
 	actualBytes, err := json.Marshal(actual)

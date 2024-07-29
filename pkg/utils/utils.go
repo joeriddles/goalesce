@@ -1,10 +1,12 @@
 package utils
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"golang.org/x/mod/modfile"
@@ -94,4 +96,13 @@ func FindGoMod(startPath string, module string) (string, error) {
 	}
 
 	return "", fmt.Errorf("go.mod file not found")
+}
+
+func First[S ~[]E, E any](s S, f func(E) bool) (E, error) {
+	index := slices.IndexFunc(s, f)
+	if index != -1 {
+		return s[index], nil
+	}
+	var empty E
+	return empty, errors.New("no matching object found in slice")
 }

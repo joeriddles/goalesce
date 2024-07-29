@@ -7,6 +7,7 @@ import (
 
 	"github.com/joeriddles/goalesce/pkg/config"
 	"github.com/joeriddles/goalesce/pkg/entity"
+	"github.com/joeriddles/goalesce/pkg/utils"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -88,7 +89,7 @@ func TestParse_Cars(t *testing.T) {
 			},
 			{
 				Name: "Vehicles",
-				Type: "[]github.com/joeriddles/goalesce/examples/cars/model.Model",
+				Type: "[]github.com/joeriddles/goalesce/examples/cars/model.VehicleModel",
 			},
 		},
 		Embedded: []*entity.GormModelMetadata{
@@ -119,7 +120,7 @@ func TestParse_Cars(t *testing.T) {
 		},
 	}
 	expectedModel := &entity.GormModelMetadata{
-		Name: "Model",
+		Name: "VehicleModel",
 		Fields: []*entity.GormModelField{
 
 			{
@@ -132,11 +133,11 @@ func TestParse_Cars(t *testing.T) {
 			},
 			{
 				Name: "Manufacturer",
-				Type: "*github.com/joeriddles/goalesce/examples/cars/model.Manufacturer",
+				Type: "github.com/joeriddles/goalesce/examples/cars/model.Manufacturer",
 			},
 			{
 				Name: "Parts",
-				Type: "[]*github.com/joeriddles/goalesce/examples/cars/model.Part",
+				Type: "[]github.com/joeriddles/goalesce/examples/cars/model.Part",
 				Tag:  "gorm:\"many2many:vehicle_parts;\"",
 			},
 		},
@@ -167,8 +168,18 @@ func TestParse_Cars(t *testing.T) {
 			},
 		},
 	}
-	assertJsonEq(t, expectedManufacturer, &actual[0])
-	assertJsonEq(t, expectedModel, &actual[1])
+
+	actualManufacturer, err := utils.First(actual, func(f *entity.GormModelMetadata) bool {
+		return f.Name == "Manufacturer"
+	})
+	require.NoError(t, err)
+	assertJsonEq(t, expectedManufacturer, actualManufacturer)
+
+	actualModel, err := utils.First(actual, func(f *entity.GormModelMetadata) bool {
+		return f.Name == "VehicleModel"
+	})
+	require.NoError(t, err)
+	assertJsonEq(t, expectedModel, actualModel)
 	// TODO(joeriddles) assert all models in cars/main.go...
 }
 

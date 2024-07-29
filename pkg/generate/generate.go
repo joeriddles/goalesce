@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"embed"
-	"errors"
 	"fmt"
 	"go/types"
 	"io/fs"
@@ -683,10 +682,10 @@ func convert(field *entity.GormModelField, dst *entity.GormModelMetadata, from, 
 
 	var dstField *entity.GormModelField
 	var err error
-	dstField, err = first(dst.Fields, match)
+	dstField, err = utils.First(dst.Fields, match)
 	if err != nil {
 		for _, embedded := range dst.Embedded {
-			dstField, err = first(embedded.Fields, match)
+			dstField, err = utils.First(embedded.Fields, match)
 			if err == nil {
 				break
 			}
@@ -778,13 +777,4 @@ func createDirs(paths ...string) error {
 		}
 	}
 	return nil
-}
-
-func first[S ~[]E, E any](s S, f func(E) bool) (E, error) {
-	index := slices.IndexFunc(s, f)
-	if index != -1 {
-		return s[index], nil
-	}
-	var empty E
-	return empty, errors.New("no matching object found in slice")
 }
