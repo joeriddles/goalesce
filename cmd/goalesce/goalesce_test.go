@@ -19,15 +19,10 @@ func Test_Basic(t *testing.T) {
 }
 
 func Test_Cars(t *testing.T) {
-	cfg := &config.Config{
-		InputFolderPath: "../../examples/cars",
-		OutputFile:      "../../examples/cars/generated",
-		ModuleName:      "github.com/joeriddles/goalesce/examples/cars",
-		ModelsPkg:       "github.com/joeriddles/goalesce/examples/cars",
-		ClearOutputDir:  true,
-	}
-	require.NoError(t, cfg.Validate())
-	err := run(cfg)
+	cfg, err := config.FromYamlFile("../../examples/cars/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
 	require.NoError(t, err)
 }
 

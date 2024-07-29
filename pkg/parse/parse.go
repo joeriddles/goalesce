@@ -1,171 +1,146 @@
 package parse
 
 import (
-	"errors"
 	"fmt"
-	"go/ast"
-	goparser "go/parser"
-	"go/token"
+	"go/types"
 	"log"
 
 	"github.com/joeriddles/goalesce/pkg/config"
 	"github.com/joeriddles/goalesce/pkg/entity"
-)
-
-var (
-	gormModelIdTag        string = "`gorm:\"primarykey\"`"
-	gormModelDeletedAtTag string = "`gorm:\"index\"`"
+	"golang.org/x/tools/go/packages"
 )
 
 type Parser interface {
 	Parse(filepath string) ([]*entity.GormModelMetadata, error)
 }
 
+const LoadAll = packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports | packages.NeedDeps | packages.NeedExportFile | packages.NeedTypes | packages.NeedTypesSizes | packages.NeedSyntax
+
 type parser struct {
-	logger *log.Logger
 	cfg    *config.Config
+	logger *log.Logger
+	pkg    *packages.Package
 }
 
-func NewParser(logger *log.Logger, cfg *config.Config) Parser {
+func NewParser(
+	logger *log.Logger,
+	cfg *config.Config,
+) Parser {
 	return &parser{
 		logger: logger,
 		cfg:    cfg,
 	}
 }
 
-// Parse GORM model metadata from the Go file
-func (p *parser) Parse(filepath string) ([]*entity.GormModelMetadata, error) {
-	fset := token.NewFileSet()
-
-	var node *ast.File
-	var err error
-
-	node, err = goparser.ParseFile(fset, filepath, nil, goparser.SkipObjectResolution) // ParseComments
+// Given a the filepath to a package with GORM models, parse all the models
+func (p *parser) Parse(pkgStr string) ([]*entity.GormModelMetadata, error) {
+	conf := &packages.Config{
+		Mode: LoadAll,
+		Dir:  p.cfg.InputFolderPath,
+	}
+	pkgs, err := packages.Load(conf, pkgStr)
 	if err != nil {
 		return nil, err
 	}
 
+	if packages.PrintErrors(pkgs) > 0 {
+		return nil, fmt.Errorf("pkg %v had errors", pkgStr)
+	}
+
 	metadatas := []*entity.GormModelMetadata{}
 
-	ast.Inspect(node, func(n ast.Node) bool {
-		switch x := n.(type) {
-		case *ast.TypeSpec:
-			metadata, _err := p.parseGormModel(x)
-			if _err != nil {
-				err = _err
-			}
-			if metadata != nil {
-				metadatas = append(metadatas, metadata)
-			}
+	p.pkg = pkgs[0]
+	for _, name := range p.pkg.Types.Scope().Names() {
+		obj := p.pkg.Types.Scope().Lookup(name)
+		if obj == nil {
+			return nil, fmt.Errorf("%s.%s not found", p.pkg.Types.Path(), name)
 		}
-		return true
-	})
 
-	return metadatas, err
-}
+		if !obj.Exported() {
+			continue
+		}
 
-// Parse metadata about the GORM model node
-func (p *parser) parseGormModel(node *ast.TypeSpec) (*entity.GormModelMetadata, error) {
-	if !p.checkIsGormModel(node) {
-		msg := fmt.Sprintf("%v does not inherit from gorm.Model", node.Name.Name)
-		if p.cfg.AllowCustomModels {
-			p.logger.Print(msg)
-		} else {
-			return nil, errors.New(msg)
+		metadata, err := p.parseObject(obj.Type())
+		if err != nil {
+			return nil, err
+		}
+		if metadata != nil {
+			metadatas = append(metadatas, metadata)
 		}
 	}
 
-	name := node.Name.Name
-	fields := p.parseGormModelFields(node)
+	return metadatas, nil
+}
 
-	// isGormModelEmbedded := false
-	// for _, field := range fields {
-	// 	isGormModelEmbedded = isGormModelEmbedded || field.IsGormModelEmbedded
-	// 	if isGormModelEmbedded {
-	// 		break
-	// 	}
-	// }
+func (p *parser) parseObject(t types.Type) (*entity.GormModelMetadata, error) {
+	var metadata *entity.GormModelMetadata
+	var err error
+	switch t := t.(type) {
+	case *types.Basic:
+		break
+	case *types.Pointer:
+		break
+	case *types.Array:
+		break
+	case *types.Slice:
+		break
+	case *types.Map:
+		break
+	case *types.Chan:
+		break
+	case *types.Struct:
+		metadata = p.parseStruct(t)
+	case *types.Tuple:
+		break
+	case *types.Signature:
+		break
+	case *types.Named:
+		metadata = p.parseNamed(t)
+	case *types.Interface:
+		break
+	}
+	return metadata, err
+}
 
+func (p *parser) parseNamed(t *types.Named) *entity.GormModelMetadata {
+	switch u := t.Underlying().(type) {
+	case *types.Struct:
+		metadata := p.parseStruct(u)
+		metadata.Name = t.Obj().Name() // ?
+		return metadata
+	case *types.Map:
+		return nil
+	case *types.Array, *types.Slice:
+		return nil
+	default:
+		panic("impossible")
+	}
+}
+
+func (p *parser) parseStruct(t *types.Struct) *entity.GormModelMetadata {
 	metadata := &entity.GormModelMetadata{
-		Name:   name,
-		Fields: fields,
-	}
-	return metadata, nil
-}
-
-func (p *parser) parseGormModelFields(node *ast.TypeSpec) []*entity.GormModelField {
-	fields := []*entity.GormModelField{}
-	ast.Inspect(node, func(n ast.Node) bool {
-		switch f := n.(type) {
-		case *ast.Field:
-			// embedded structs
-			if len(f.Names) == 0 {
-				fType := p.parseType(f.Type)
-				if fType == "gorm.Model" {
-					// TODO(joeriddles): handle any embedded struct
-					// gormPath := reflect.TypeOf(gorm.Model{}).PkgPath()
-
-					fields = append(
-						fields,
-						&entity.GormModelField{Name: "ID", Type: "uint", Tag: gormModelIdTag},
-						&entity.GormModelField{Name: "CreatedAt", Type: "time.Time"},
-						&entity.GormModelField{Name: "UpdatedAt", Type: "time.Time"},
-						&entity.GormModelField{Name: "DeletedAt", Type: "gorm.DeletedAt", Tag: gormModelDeletedAtTag},
-					)
-				}
-				break
-			}
-
-			fName := f.Names[0].Name // TODO(joeriddles): support multiple names
-			fType := p.parseType(f.Type)
-
-			field := &entity.GormModelField{
-				Name: fName,
-				Type: fType,
-				Tag:  f.Tag.Value,
-			}
-			fields = append(fields, field)
-		}
-		return true
-	})
-	return fields
-}
-
-func (p *parser) parseType(f ast.Expr) string {
-	var fType string
-
-	switch t := f.(type) {
-	case *ast.Ident:
-		fType = t.Name
-	case *ast.StarExpr:
-		elementType := p.parseType(t.X)
-		fType = fmt.Sprintf("*%v", elementType)
-	case *ast.ArrayType:
-		elementType := p.parseType(t.Elt)
-		fType = fmt.Sprintf("[]%v", elementType)
-	case *ast.SelectorExpr:
-		fType = fmt.Sprintf("%v.%v", p.parseType(t.X), p.parseType(t.Sel))
+		Fields:   []*entity.GormModelField{},
+		Embedded: []*entity.GormModelMetadata{},
 	}
 
-	return fType
-}
-
-// Check if the ast node is a GORM model
-func (p *parser) checkIsGormModel(node *ast.TypeSpec) bool {
-	var isGorm = false
-
-	ast.Inspect(node, func(n ast.Node) bool {
-		switch f := n.(type) {
-		case *ast.Field:
-			if expr, ok := f.Type.(*ast.SelectorExpr); ok {
-				xId, xIdOk := expr.X.(*ast.Ident)
-				if xIdOk && xId.Name == "gorm" && expr.Sel.Name == "Model" {
-					isGorm = true
-				}
-			}
+	for i := 0; i < t.NumFields(); i++ {
+		field := t.Field(i)
+		if !field.Exported() {
+			continue
 		}
-		return true
-	})
 
-	return isGorm
+		if field.Embedded() {
+			fieldMetadata, _ := p.parseObject(field.Type().Underlying())
+			metadata.Embedded = append(metadata.Embedded, fieldMetadata)
+			continue
+		}
+
+		modelField := &entity.GormModelField{}
+		modelField.Name = field.Name()
+		modelField.WithType(field.Type())
+		modelField.Tag = t.Tag(i)
+		metadata.Fields = append(metadata.Fields, modelField)
+	}
+
+	return metadata
 }

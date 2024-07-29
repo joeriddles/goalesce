@@ -164,3 +164,17 @@ func toPascalCase(s string) string {
 	camelCase := toCamelCase(s)
 	return strings.ToUpper(camelCase[0:1]) + camelCase[1:]
 }
+
+func convertGormDeletedAtToTime(obj gorm.DeletedAt) *time.Time {
+	if obj.Valid {
+		return &obj.Time
+	}
+	return nil
+}
+
+func convertTimeToGormDeletedAt(obj *time.Time) gorm.DeletedAt {
+	if obj != nil {
+		return gorm.DeletedAt{Time: *obj, Valid: true}
+	}
+	return gorm.DeletedAt{Time: time.Time{}, Valid: false}
+}

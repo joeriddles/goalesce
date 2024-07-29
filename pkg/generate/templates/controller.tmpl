@@ -5,6 +5,7 @@ import (
   "context"
 
   repository "{{.repositoryImportPath}}"
+  query "{{.queryPackage}}"
   {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 
@@ -21,9 +22,9 @@ type {{.model.Name|ToCamelCase}}Controller struct {
   mapper {{.model.Name}}Mapper
 }
 
-func New{{.model.Name}}Controller() {{.model.Name}}Controller {
+func New{{.model.Name}}Controller(query *query.Query) {{.model.Name}}Controller {
   return &{{.model.Name|ToCamelCase}}Controller{
-    repository: repository.New{{.model.Name}}Repository(),
+    repository: repository.New{{.model.Name}}Repository(query),
     mapper: New{{.model.Name}}Mapper(),
   }
 }
@@ -36,29 +37,21 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx context.C
 
   result := []{{Types}}{{.model.Name}}{}
   for _, {{.model.Name|ToCamelCase}} := range {{.model.Name|ToCamelCase}}s {
-    api{{.model.Name}}, err := c.mapper.MapToApi(*{{.model.Name|ToCamelCase}})
-    if err != nil {
-      return nil, err
-    }
-    result = append(result, *api{{.model.Name}})
+    api{{.model.Name}} := c.mapper.MapToApi(*{{.model.Name|ToCamelCase}})
+    result = append(result, api{{.model.Name}})
   }
 
   return {{Types}}Get{{.model.Name}}200JSONResponse(result), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx context.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error) {
-  model, err := c.mapper.MapCreate(*request.Body)
-  if err != nil {
-    return nil, err
-  }
-  if model, err = c.repository.Create(ctx, *model); err != nil {
-    return nil, err
-  }
-  apiModel, err := c.mapper.MapToApi(*model)
-  if err != nil {
-    return nil, err
-  }
-  return {{Types}}Post{{.model.Name}}201JSONResponse(*apiModel), nil
+  model := c.mapper.MapCreate(*request.Body)
+  createdModel, err := c.repository.Create(ctx, model)
+	if err != nil {
+		return nil, err
+	}
+	apiModel := c.mapper.MapToApi(*createdModel)
+  return {{Types}}Post{{.model.Name}}201JSONResponse(apiModel), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}ID(ctx context.Context, request {{Types}}Delete{{.model.Name}}IDRequestObject) ({{Types}}Delete{{.model.Name}}IDResponseObject, error) {
@@ -73,19 +66,13 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx context
   if err != nil {
     return nil, err
   }
-  apiModel, err := c.mapper.MapToApi(*model)
-  if err != nil {
-    return nil, err
-  }
-  return {{Types}}Get{{.model.Name}}ID200JSONResponse(*apiModel), err
+  apiModel := c.mapper.MapToApi(*model)
+  return {{Types}}Get{{.model.Name}}ID200JSONResponse(apiModel), err
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {
 	var err error
-  update, err := c.mapper.MapUpdate(*request.Body)
-  if err != nil {
-    return nil, err
-  }
+  update := c.mapper.MapUpdate(*request.Body)
   if _, err = c.repository.Update(ctx, request.ID, update); err != nil {
     return nil, err
   }

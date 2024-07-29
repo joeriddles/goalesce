@@ -5,6 +5,7 @@ import (
   "context"
 
   model "{{.pkg}}"
+  query "{{.queryPkg}}"
 )
 
 type {{.model.Name}}Repository interface {
@@ -36,31 +37,35 @@ type {{.model.Name}}Repository interface {
 }
 
 type {{.model.Name|ToCamelCase}}Repository struct {
+  query *query.Query
 }
 
-func New{{.model.Name}}Repository() {{.model.Name}}Repository {
-  return &{{.model.Name|ToCamelCase}}Repository{}
+func New{{.model.Name}}Repository(query *query.Query) {{.model.Name}}Repository {
+  return &{{.model.Name|ToCamelCase}}Repository{
+    query: query,
+  }
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) List(
   ctx context.Context,
   filters any,
 ) ([]*model.{{.model.Name}}, error) {
-  return nil, nil
+  return r.query.{{.model.Name}}.Find()
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Get(
   ctx context.Context,
   id int64,
 ) (*model.{{.model.Name}}, error) {
-  return nil, nil
+  return r.query.{{.model.Name}}.Where(r.query.{{.model.Name}}.ID.Eq(uint(id))).First()
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Create(
   ctx context.Context,
   {{.model.Name|ToCamelCase}} model.{{.model.Name}},
 ) (*model.{{.model.Name}}, error) {
-  return nil, nil
+  err := r.query.{{.model.Name}}.Create(&{{.model.Name|ToCamelCase}})
+	return &{{.model.Name|ToCamelCase}}, err
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Update(
@@ -68,12 +73,21 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Update(
   id int64,
   update map[string]interface{},
 ) (*model.{{.model.Name}}, error) {
-  return nil, nil
+  {{.model.Name|ToCamelCase}} := &model.{{.model.Name}}{}
+	_, err := r.query.{{.model.Name}}.
+		Where(r.query.{{.model.Name}}.ID.Eq(uint(id))).
+		Omit(r.query.{{.model.Name}}.ID).
+		Returning({{.model.Name|ToCamelCase}}).
+		Updates(update)
+	return {{.model.Name|ToCamelCase}}, err
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Delete(
   ctx context.Context,
   id int64,
 ) error {
-  return nil
+  _, err := r.query.{{.model.Name}}.
+		Where(r.query.{{.model.Name}}.ID.Eq(uint(id))).
+		Delete()
+	return err
 }

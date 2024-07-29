@@ -2,17 +2,20 @@
 package {{.package}}
 
 import (
-	{{if .model.IsGormModelEmbedded}}"gorm.io/gorm"{{end}}
+	"gorm.io/gorm"
+
   model "{{.pkg}}"
   {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
   "github.com/joeriddles/goalesce/pkg/automapper"
 )
 
 type {{.model.Name}}Mapper interface {
-  MapToModel(obj {{Types}}{{.model.Name}}) (*model.{{.model.Name}}, error)
-  MapToApi(model model.{{.model.Name}}) (*{{Types}}{{.model.Name}}, error)
-  MapCreate(obj {{Types}}Create{{.model.Name}}) (*model.{{.model.Name}}, error)
-  MapUpdate(obj {{Types}}Update{{.model.Name}}) (map[string]interface{}, error)
+  MapToModel(obj {{Types}}{{.model.Name}}) model.{{.model.Name}}
+	MapToModels(objs []{{Types}}{{.model.Name}}) []model.{{.model.Name}}
+  MapToApi(model model.{{.model.Name}}) {{Types}}{{.model.Name}}
+	MapToApis(models []model.{{.model.Name}}) *[]{{Types}}{{.model.Name}}
+  MapCreate(obj {{Types}}Create{{.model.Name}}) model.{{.model.Name}}
+  MapUpdate(obj {{Types}}Update{{.model.Name}}) map[string]interface{}
 }
 
 type {{.model.Name|ToCamelCase}}Mapper struct {
@@ -31,28 +34,54 @@ func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
   }
 }
 
-func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModel(obj {{Types}}{{.model.Name}}) (*model.{{.model.Name}}, error) {
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModel(obj {{Types}}{{.model.Name}}) model.{{.model.Name}} {
   model := &model.{{.model.Name}}{}
-	err := m.automapper.MapFrom(&obj, model)
-	return model, err
+  {{range .api.Fields}}
+  {{.|ConvertToModel}}
+  {{end}}
+	return *model
 }
 
-func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model model.{{.model.Name}}) (*{{Types}}{{.model.Name}}, error) {
-  result := &{{Types}}{{.model.Name}}{}
-	err := m.automapper.MapTo(&model, result)
-	return result, err
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModels(objs []{{Types}}{{.model.Name}}) []model.{{.model.Name}} {
+	models := []model.{{.model.Name}}{}
+	for _, obj := range objs {
+		model := m.MapToModel(obj)
+		models = append(models, model)
+	}
+	return models
 }
 
-func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj {{Types}}Create{{.model.Name}}) (*model.{{.model.Name}}, error) {
-	model := &model.{{.model.Name}}{} // TODO: use automapper
-  err := m.createAutomapper.MapFrom(&obj, model)
-	return model, err
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApi(model model.{{.model.Name}}) {{Types}}{{.model.Name}} {
+  obj := &{{Types}}{{.model.Name}}{}
+	{{range .model.Fields}}
+  {{.|ConvertToApi}}
+  {{end}}{{range .model.Embedded}}{{range .Fields}}
+  {{.|ConvertToApi}}
+  {{end}}{{end}}
+	return *obj
 }
 
-func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj {{Types}}Update{{.model.Name}}) (map[string]interface{}, error) {
-	update := &map[string]interface{}{} // TODO: use automapper
-	if err := m.updateMapper.Map(obj, update); err != nil {
-    return nil, err
-  }
-	return *update, nil
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApis(models []model.{{.model.Name}}) *[]{{Types}}{{.model.Name}} {
+	objs := []{{Types}}{{.model.Name}}{}
+	for _, model := range models {
+		obj := m.MapToApi(model)
+		objs = append(objs, obj)
+	}
+	return &objs
+}
+
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj {{Types}}Create{{.model.Name}}) model.{{.model.Name}} {
+	model := &model.{{.model.Name}}{}
+  {{range .createApi.Fields}}
+  {{.|ConvertToModel}}
+  {{end}}
+	return *model
+}
+
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj {{Types}}Update{{.model.Name}}) map[string]interface{} {
+	update := map[string]interface{}{}
+  {{range .model.Fields}}
+  update["{{.Name}}"] = obj.{{.Name}}
+  {{end}}
+	return update
 }

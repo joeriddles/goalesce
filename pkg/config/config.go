@@ -19,6 +19,8 @@ type Config struct {
 	ModuleName string `yaml:"module_name"`
 	// The name of the package that the GORM models are part of
 	ModelsPkg string `yaml:"models_package"`
+	// The name of the package that the GORM-generated Query is in
+	QueryPkg string `yaml:"query_package"`
 	// If true, clears the contents of the output directory before generating new files
 	ClearOutputDir bool `yaml:"clear_output_dir"`
 	// If true, parses classes that do not inherit from gorm.Model

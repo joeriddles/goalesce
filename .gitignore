@@ -26,5 +26,3 @@ go.work.sum
 
 # Custom
 generated
-*.gen.*
-!query/*

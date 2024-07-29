@@ -1,7 +1,8 @@
-input_folder_path: "./"
-output_file_path: "./generated/cars"
-module_name: "github.com/joeriddles/goalesce"
-models_package: "github.com/joeriddles/goalesce/examples/cars"
+input_folder_path: ./model
+output_file_path: ./generated
+module_name: github.com/joeriddles/goalesce/examples/cars
+models_package: github.com/joeriddles/goalesce/examples/cars/model
+query_package: github.com/joeriddles/goalesce/examples/cars/query
 clear_output_dir: true
 oapi_codegen:
   package: alt

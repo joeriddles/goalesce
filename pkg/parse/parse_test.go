@@ -11,47 +11,57 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type noopWriter struct{}
+
+func (w *noopWriter) Write(p []byte) (n int, err error) {
+	return 0, nil
+}
+
+var noopLogger *log.Logger = log.New(&noopWriter{}, "", 0)
+
 func TestParse_Basic(t *testing.T) {
-	cfg := &config.Config{AllowCustomModels: false}
-	parser := NewParser(log.Default(), cfg)
-	actual, err := parser.Parse("../../examples/basic/main.go")
+	cfg := &config.Config{
+		AllowCustomModels: false,
+		InputFolderPath:   "../../examples/basic",
+	}
+	parser := NewParser(noopLogger, cfg)
+	actual, err := parser.Parse("../../examples/basic/model")
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(actual))
 
-	expectedIdTag := "`gorm:\"primarykey\"`"
-	expectedDeletedAtTag := "`gorm:\"index\"`"
-	expectedNameTag := "`gorm:\"column:name;\"`"
-
 	expected := &entity.GormModelMetadata{
-		Name:                "User",
-		IsGormModelEmbedded: true,
+		Name: "User",
 		Fields: []*entity.GormModelField{
-			{
-				Name:                "ID",
-				IsGormModelEmbedded: true,
-				Type:                "uint",
-				Tag:                 &expectedIdTag,
-			},
-			{
-				Name:                "CreatedAt",
-				IsGormModelEmbedded: true,
-				Type:                "time.Time",
-			},
-			{
-				Name:                "UpdatedAt",
-				IsGormModelEmbedded: true,
-				Type:                "time.Time",
-			},
-			{
-				Name:                "DeletedAt",
-				IsGormModelEmbedded: true,
-				Type:                "gorm.DeletedAt",
-				Tag:                 &expectedDeletedAtTag,
-			},
 			{
 				Name: "Name",
 				Type: "string",
-				Tag:  &expectedNameTag,
+				Tag:  "gorm:\"column:name;\"",
+			},
+		},
+		Embedded: []*entity.GormModelMetadata{
+			{
+				Name:     "",
+				Embedded: []*entity.GormModelMetadata{},
+				Fields: []*entity.GormModelField{
+					{
+						Name: "ID",
+						Type: "uint",
+						Tag:  "gorm:\"primarykey\"",
+					},
+					{
+						Name: "CreatedAt",
+						Type: "time.Time",
+					},
+					{
+						Name: "UpdatedAt",
+						Type: "time.Time",
+					},
+					{
+						Name: "DeletedAt",
+						Type: "gorm.io/gorm.DeletedAt",
+						Tag:  "gorm:\"index\"",
+					},
+				},
 			},
 		},
 	}
@@ -60,78 +70,58 @@ func TestParse_Basic(t *testing.T) {
 }
 
 func TestParse_Cars(t *testing.T) {
-	cfg := &config.Config{AllowCustomModels: false}
-	parser := NewParser(log.Default(), cfg)
-	actual, err := parser.Parse("../../examples/cars/main.go")
+	cfg := &config.Config{
+		AllowCustomModels: false,
+		InputFolderPath:   "../../examples/cars",
+	}
+	parser := NewParser(noopLogger, cfg)
+	actual, err := parser.Parse("../../examples/cars/model")
 	require.NoError(t, err)
 	assert.Equal(t, 5, len(actual))
 
-	expectedIdTag := "`gorm:\"primarykey\"`"
-	expectedDeletedAtTag := "`gorm:\"index\"`"
-
 	expectedManufacturer := &entity.GormModelMetadata{
-		Name:                "Manufacturer",
-		IsGormModelEmbedded: true,
+		Name: "Manufacturer",
 		Fields: []*entity.GormModelField{
-			{
-				Name:                "ID",
-				IsGormModelEmbedded: true,
-				Type:                "uint",
-				Tag:                 &expectedIdTag,
-			},
-			{
-				Name:                "CreatedAt",
-				IsGormModelEmbedded: true,
-				Type:                "time.Time",
-			},
-			{
-				Name:                "UpdatedAt",
-				IsGormModelEmbedded: true,
-				Type:                "time.Time",
-			},
-			{
-				Name:                "DeletedAt",
-				IsGormModelEmbedded: true,
-				Type:                "gorm.DeletedAt",
-				Tag:                 &expectedDeletedAtTag,
-			},
 			{
 				Name: "Name",
 				Type: "string",
 			},
 			{
 				Name: "Vehicles",
-				Type: "[]Model",
+				Type: "[]github.com/joeriddles/goalesce/examples/cars/model.Model",
+			},
+		},
+		Embedded: []*entity.GormModelMetadata{
+			{
+				Name:     "",
+				Embedded: []*entity.GormModelMetadata{},
+				Fields: []*entity.GormModelField{
+					{
+						Name: "ID",
+						Type: "uint",
+						Tag:  "gorm:\"primarykey\"",
+					},
+					{
+						Name: "CreatedAt",
+						Type: "time.Time",
+					},
+					{
+						Name: "UpdatedAt",
+						Type: "time.Time",
+					},
+					{
+						Name: "DeletedAt",
+						Type: "gorm.io/gorm.DeletedAt",
+						Tag:  "gorm:\"index\"",
+					},
+				},
 			},
 		},
 	}
-	expectedModelPartsTag := "`gorm:\"many2many:vehicle_parts;\"`"
 	expectedModel := &entity.GormModelMetadata{
-		Name:                "Model",
-		IsGormModelEmbedded: true,
+		Name: "Model",
 		Fields: []*entity.GormModelField{
-			{
-				Name:                "ID",
-				IsGormModelEmbedded: true,
-				Type:                "uint",
-				Tag:                 &expectedIdTag,
-			},
-			{
-				Name:                "CreatedAt",
-				IsGormModelEmbedded: true,
-				Type:                "time.Time",
-			},
-			{
-				Name:                "UpdatedAt",
-				IsGormModelEmbedded: true,
-				Type:                "time.Time",
-			},
-			{
-				Name:                "DeletedAt",
-				IsGormModelEmbedded: true,
-				Type:                "gorm.DeletedAt",
-				Tag:                 &expectedDeletedAtTag,
-			},
+
 			{
 				Name: "Name",
 				Type: "string",
@@ -142,12 +132,38 @@ func TestParse_Cars(t *testing.T) {
 			},
 			{
 				Name: "Manufacturer",
-				Type: "*Manufacturer",
+				Type: "*github.com/joeriddles/goalesce/examples/cars/model.Manufacturer",
 			},
 			{
 				Name: "Parts",
-				Type: "[]*Part",
-				Tag:  &expectedModelPartsTag,
+				Type: "[]*github.com/joeriddles/goalesce/examples/cars/model.Part",
+				Tag:  "gorm:\"many2many:vehicle_parts;\"",
+			},
+		},
+		Embedded: []*entity.GormModelMetadata{
+			{
+				Name:     "",
+				Embedded: []*entity.GormModelMetadata{},
+				Fields: []*entity.GormModelField{
+					{
+						Name: "ID",
+						Type: "uint",
+						Tag:  "gorm:\"primarykey\"",
+					},
+					{
+						Name: "CreatedAt",
+						Type: "time.Time",
+					},
+					{
+						Name: "UpdatedAt",
+						Type: "time.Time",
+					},
+					{
+						Name: "DeletedAt",
+						Type: "gorm.io/gorm.DeletedAt",
+						Tag:  "gorm:\"index\"",
+					},
+				},
 			},
 		},
 	}
@@ -157,45 +173,81 @@ func TestParse_Cars(t *testing.T) {
 }
 
 func TestParse_Custom(t *testing.T) {
-	cfg := &config.Config{AllowCustomModels: true}
-	parser := NewParser(log.Default(), cfg)
-	actual, err := parser.Parse("../../examples/custom/main.go")
+	cfg := &config.Config{
+		AllowCustomModels: true,
+		InputFolderPath:   "../../examples/custom",
+	}
+	parser := NewParser(noopLogger, cfg)
+	actual, err := parser.Parse("../../examples/custom/model")
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(actual))
-
-	expectedIdTag := "`gorm:\"column:id;type:bigint;primaryKey;autoIncrement:true\" json:\"id\"`"
-	expectedCreatedAtTag := "`gorm:\"column:created_at;type:timestamp with time zone\" json:\"created_at\"`"
-	expectedUpdatedAtTag := "`gorm:\"column:updated_at;type:timestamp with time zone\" json:\"updated_at\"`"
-	expectedDeletedAtTag := "`gorm:\"column:deleted_at;type:timestamp with time zone\" json:\"deleted_at\"`"
+	assert.Equal(t, 2, len(actual))
 
 	expected := &entity.GormModelMetadata{
-		Name:                "Custom",
-		IsGormModelEmbedded: false,
+		Name:     "Base",
+		Embedded: []*entity.GormModelMetadata{},
 		Fields: []*entity.GormModelField{
 			{
 				Name: "ID",
 				Type: "int64",
-				Tag:  &expectedIdTag,
+				Tag:  "gorm:\"column:id;type:bigint;primaryKey;autoIncrement:true\" json:\"id\"",
 			},
 			{
 				Name: "CreatedAt",
 				Type: "time.Time",
-				Tag:  &expectedCreatedAtTag,
+				Tag:  "gorm:\"column:created_at;type:timestamp with time zone\" json:\"created_at\"",
 			},
 			{
 				Name: "UpdatedAt",
 				Type: "time.Time",
-				Tag:  &expectedUpdatedAtTag,
+				Tag:  "gorm:\"column:updated_at;type:timestamp with time zone\" json:\"updated_at\"",
 			},
 			{
 				Name: "DeletedAt",
-				Type: "gorm.DeletedAt",
-				Tag:  &expectedDeletedAtTag,
+				Type: "gorm.io/gorm.DeletedAt",
+				Tag:  "gorm:\"column:deleted_at;type:timestamp with time zone\" json:\"deleted_at\"",
 			},
 		},
 	}
-
 	assertJsonEq(t, expected, &actual[0])
+
+	expected = &entity.GormModelMetadata{
+		Name: "Custom",
+		Fields: []*entity.GormModelField{
+			{
+				Name: "Name",
+				Type: "string",
+			},
+		},
+		Embedded: []*entity.GormModelMetadata{
+			{
+				Name:     "",
+				Embedded: []*entity.GormModelMetadata{},
+				Fields: []*entity.GormModelField{
+					{
+						Name: "ID",
+						Type: "int64",
+						Tag:  "gorm:\"column:id;type:bigint;primaryKey;autoIncrement:true\" json:\"id\"",
+					},
+					{
+						Name: "CreatedAt",
+						Type: "time.Time",
+						Tag:  "gorm:\"column:created_at;type:timestamp with time zone\" json:\"created_at\"",
+					},
+					{
+						Name: "UpdatedAt",
+						Type: "time.Time",
+						Tag:  "gorm:\"column:updated_at;type:timestamp with time zone\" json:\"updated_at\"",
+					},
+					{
+						Name: "DeletedAt",
+						Type: "gorm.io/gorm.DeletedAt",
+						Tag:  "gorm:\"column:deleted_at;type:timestamp with time zone\" json:\"deleted_at\"",
+					},
+				},
+			},
+		},
+	}
+	assertJsonEq(t, expected, &actual[1])
 }
 
 func assertJsonEq(t *testing.T, expected any, actual any) {

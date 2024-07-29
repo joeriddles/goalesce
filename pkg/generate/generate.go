@@ -5,7 +5,9 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"errors"
 	"fmt"
+	"go/types"
 	"io/fs"
 	"log"
 	"os"
@@ -19,6 +21,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/joeriddles/goalesce/pkg/config"
 	"github.com/joeriddles/goalesce/pkg/entity"
+	"github.com/joeriddles/goalesce/pkg/parse"
 	"github.com/joeriddles/goalesce/pkg/utils"
 	"github.com/oapi-codegen/oapi-codegen/v2/pkg/codegen"
 	codegen_util "github.com/oapi-codegen/oapi-codegen/v2/pkg/util"
@@ -104,42 +107,18 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	for _, metadata := range metadatas {
-		_, err := g.generateOpenApiRoutes(t, metadata)
-		if err != nil {
-			return err
-		}
-	}
-
-	if err := g.generateOpenApiBase(metadatas); err != nil {
+	if err := g.generateOpenApiYaml(t, metadatas); err != nil {
 		return err
 	}
 
-	if err := g.combineOpenApiFiles(); err != nil {
+	if err := g.runCodegenTool(); err != nil {
 		return err
 	}
 
-	g.cfg.TypesCodegen.Configuration.OutputOptions.NameNormalizer = "ToCamelCaseWithInitialisms"
-	g.cfg.ServerCodegen.Configuration.OutputOptions.NameNormalizer = "ToCamelCaseWithInitialisms"
-
-	swagger, err := codegen_util.LoadSwagger(filepath.Join(g.cfg.OutputFile, "openapi.yaml"))
+	// parse generated API types
+	parser := parse.NewParser(g.logger, g.cfg)
+	apiMetadatas, err := parser.Parse(g.cfg.TypesCodegen.OutputFile)
 	if err != nil {
-		return err
-	}
-
-	code, err := codegen.Generate(swagger, g.cfg.TypesCodegen.Configuration)
-	if err != nil {
-		return err
-	}
-	if err = os.WriteFile(g.cfg.TypesCodegen.OutputFile, []byte(code), 0o644); err != nil {
-		return err
-	}
-
-	code, err = codegen.Generate(swagger, g.cfg.ServerCodegen.Configuration)
-	if err != nil {
-		return err
-	}
-	if err = os.WriteFile(g.cfg.ServerCodegen.OutputFile, []byte(code), 0o644); err != nil {
 		return err
 	}
 
@@ -148,13 +127,25 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			continue
 		}
 
+		var apiMetadata *entity.GormModelMetadata
+		var createApiMetadata *entity.GormModelMetadata
+		createStr := fmt.Sprintf("Create%v", metadata.Name)
+		for _, _apiMetadata := range apiMetadatas {
+			if metadata.Name == _apiMetadata.Name {
+				apiMetadata = _apiMetadata
+			}
+			if createStr == _apiMetadata.Name {
+				createApiMetadata = _apiMetadata
+			}
+		}
+
 		if err := g.generateController(t, metadata); err != nil {
 			return err
 		}
 		if err := g.generateRepository(t, metadata); err != nil {
 			return err
 		}
-		if err := g.generateMapper(t, metadata); err != nil {
+		if err := g.generateMapper(t, metadata, apiMetadata, createApiMetadata); err != nil {
 			return err
 		}
 	}
@@ -176,6 +167,49 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	}
 
 	if err := g.generateMapperUtil(t); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (g *generator) generateOpenApiYaml(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+	for _, metadata := range metadatas {
+		_, err := g.generateOpenApiRoutes(t, metadata)
+		if err != nil {
+			return err
+		}
+	}
+	if err := g.generateOpenApiBase(metadatas); err != nil {
+		return err
+	}
+	if err := g.combineOpenApiFiles(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (g *generator) runCodegenTool() error {
+	g.cfg.TypesCodegen.Configuration.OutputOptions.NameNormalizer = "ToCamelCaseWithInitialisms"
+	g.cfg.ServerCodegen.Configuration.OutputOptions.NameNormalizer = "ToCamelCaseWithInitialisms"
+
+	swagger, err := codegen_util.LoadSwagger(filepath.Join(g.cfg.OutputFile, "openapi.yaml"))
+	if err != nil {
+		return err
+	}
+	code, err := codegen.Generate(swagger, g.cfg.TypesCodegen.Configuration)
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile(g.cfg.TypesCodegen.OutputFile, []byte(code), 0o644); err != nil {
+		return err
+	}
+
+	code, err = codegen.Generate(swagger, g.cfg.ServerCodegen.Configuration)
+	if err != nil {
+		return err
+	}
+	if err = os.WriteFile(g.cfg.ServerCodegen.OutputFile, []byte(code), 0o644); err != nil {
 		return err
 	}
 
@@ -310,6 +344,7 @@ func (g *generator) generateController(t *template.Template, metadata *entity.Go
 		template,
 		map[string]interface{}{
 			"package":              g.cfg.ServerCodegen.PackageName,
+			"queryPackage":         g.cfg.QueryPkg,
 			"typesPackage":         g.typesPackage,
 			"repositoryImportPath": g.repositoryPackage,
 			"model":                metadata,
@@ -331,6 +366,7 @@ func (g *generator) generateServer(t *template.Template, metadatas []*entity.Gor
 		template,
 		map[string]interface{}{
 			"package":      g.cfg.ServerCodegen.PackageName,
+			"queryPackage": g.cfg.QueryPkg,
 			"typesPackage": g.typesPackage,
 			"metadatas":    metadatas,
 		},
@@ -345,14 +381,32 @@ func (g *generator) generateRepository(t *template.Template, metadata *entity.Go
 		fp,
 		"repository.tmpl",
 		map[string]interface{}{
-			"pkg":   g.cfg.ModelsPkg,
-			"model": metadata,
+			"pkg":      g.cfg.ModelsPkg,
+			"queryPkg": g.cfg.QueryPkg,
+			"model":    metadata,
 		},
 	)
 }
 
-func (g *generator) generateMapper(t *template.Template, metadata *entity.GormModelMetadata) error {
+func (g *generator) generateMapper(
+	t *template.Template,
+	metadata *entity.GormModelMetadata,
+	apiMetadata *entity.GormModelMetadata,
+	createApiMetadata *entity.GormModelMetadata,
+) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
+
+	convertToModel := func(field *entity.GormModelField) string {
+		return convert(field, metadata, "obj", "model")
+	}
+	convertToApi := func(field *entity.GormModelField) string {
+		return convert(field, apiMetadata, "model", "obj")
+	}
+	t.Funcs(template.FuncMap{
+		"ConvertToModel": convertToModel,
+		"ConvertToApi":   convertToApi,
+	})
+
 	return g.generateGo(
 		t,
 		fp,
@@ -362,6 +416,8 @@ func (g *generator) generateMapper(t *template.Template, metadata *entity.GormMo
 			"typesPackage": g.typesPackage,
 			"pkg":          g.cfg.ModelsPkg,
 			"model":        metadata,
+			"api":          apiMetadata,
+			"createApi":    createApiMetadata,
 		},
 	)
 }
@@ -457,6 +513,10 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"IsNullable":     isNullable,
 		"Not":            not,
 		"Types":          getTypesNamespace,
+		// will be replaced per model
+		"ConvertToModel":           func() string { return "" },
+		"ConvertToApi":             func() string { return "" },
+		"ConvertToModelFromCreate": func() string { return "" },
 	}
 
 	err := fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {
@@ -586,7 +646,7 @@ func toOpenApiType(t string) *OpenApiType {
 		case "time.Time":
 			format := "date-time"
 			result = &OpenApiType{Type: "string", Format: &format, Nullable: nullable}
-		case "gorm.DeletedAt":
+		case "gorm.io/gorm.DeletedAt":
 			format := "date-time"
 			result = &OpenApiType{Type: "string", Format: &format, Nullable: true}
 		case "int", "uint":
@@ -613,6 +673,80 @@ func toOpenApiType(t string) *OpenApiType {
 	}
 
 	return result
+}
+
+// Convert the field be converted to matching field on dst
+func convert(field *entity.GormModelField, dst *entity.GormModelMetadata, from, to string) string {
+	match := func(e *entity.GormModelField) bool {
+		return e.Name == field.Name
+	}
+
+	var dstField *entity.GormModelField
+	var err error
+	dstField, err = first(dst.Fields, match)
+	if err != nil {
+		for _, embedded := range dst.Embedded {
+			dstField, err = first(embedded.Fields, match)
+			if err == nil {
+				break
+			}
+			// 100% a developer error
+			panic(fmt.Sprintf("%v not found in %v", field.Name, dst.Name))
+		}
+	}
+
+	srcType := field.GetType()
+	dstType := dstField.GetType()
+
+	if ptrSrc, ok := srcType.(*types.Pointer); ok {
+		srcType = ptrSrc.Elem()
+	}
+	if ptrDst, ok := dstType.(*types.Pointer); ok {
+		dstType = ptrDst.Elem()
+	}
+
+	switch s := srcType.(type) {
+	case *types.Basic:
+		switch d := dstType.(type) {
+		case *types.Basic:
+			if s.Kind() != d.Kind() && types.ConvertibleTo(s, d) {
+				return fmt.Sprintf("%v.%v = %v(%v.%v)", to, dstField.Name, d.Name(), from, field.Name)
+			}
+		}
+	case *types.Named:
+		switch d := dstType.(type) {
+		case *types.Named:
+			if s.Obj().Name() == "Time" && d.Obj().Name() == "DeletedAt" {
+				return fmt.Sprintf("%v.%v = convertTimeToGormDeletedAt(%v.%v)", to, dstField.Name, from, field.Name)
+			} else if d.Obj().Name() == "Time" && s.Obj().Name() == "DeletedAt" {
+				return fmt.Sprintf("%v.%v = convertGormDeletedAtToTime(%v.%v)", to, dstField.Name, from, field.Name)
+			}
+
+			// TODO(joeriddles): add field to GormModelField for references to user-defined models?
+			if isComplexType(dstField.Type) && !strings.Contains(dstField.Type, ".") {
+				dstElemType, _ := strings.CutPrefix(dstField.Type, "*")
+				if to == "model" {
+					return fmt.Sprintf(`%v.%v = New%vMapper().MapToModel(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+				} else {
+					return fmt.Sprintf(`%v.%v = New%vMapper().MapToApi(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+				}
+			}
+		}
+	case *types.Slice:
+		if _, ok := dstType.(*types.Slice); ok {
+			dstElemType, _ := strings.CutPrefix(dstField.Type, "*")
+			dstElemType, _ = strings.CutPrefix(dstElemType, "[]")
+
+			// TODO(joeriddles): this is super hacky, change it
+			if to == "model" {
+				return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToModels(*%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+			} else {
+				return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToApis(%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+			}
+		}
+	}
+
+	return fmt.Sprintf("%v.%v = %v.%v", to, dstField.Name, from, field.Name)
 }
 
 func isComplexType(t string) bool {
@@ -644,4 +778,13 @@ func createDirs(paths ...string) error {
 		}
 	}
 	return nil
+}
+
+func first[S ~[]E, E any](s S, f func(E) bool) (E, error) {
+	index := slices.IndexFunc(s, f)
+	if index != -1 {
+		return s[index], nil
+	}
+	var empty E
+	return empty, errors.New("no matching object found in slice")
 }

@@ -104,14 +104,24 @@ components:
           items:
             {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
           {{end}}{{end}}
-        {{end}}
+        {{end}}{{range .Embedded}}{{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+          {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
+          format: {{.Format}}{{end}}{{if .Nullable}}
+          nullable: true{{end}}{{if ne .Items nil}}
+          items:
+            {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
+          {{end}}{{end}}
+        {{end}}{{end}}
+
       required:
         {{range .Fields}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
         {{end}}
+        {{range .Embedded}}{{range .Fields}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
+        {{end}}{{end}}
     Create{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{if .IsGormModelEmbedded}}{{continue}}{{end}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}
@@ -120,12 +130,12 @@ components:
           {{end}}{{end}}
         {{end}}
       required:
-        {{range .Fields}}{{if .IsGormModelEmbedded}}{{continue}}{{end}}- {{.Name|ToSnakeCase}}
+        {{range .Fields}}- {{.Name|ToSnakeCase}}
         {{end}}
     Update{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{if .IsGormModelEmbedded}}{{continue}}{{end}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}

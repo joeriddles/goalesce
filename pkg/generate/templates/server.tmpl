@@ -3,6 +3,8 @@ package {{.package}}
 
 import (
 	"context"
+  
+  query "{{.queryPackage}}"
   {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 
@@ -11,9 +13,9 @@ type Server struct {
   {{end}}
 }
 
-func NewServer() *Server {
+func NewServer(query *query.Query) *Server {
 	return &Server{
-    {{range .metadatas}}{{.Name}}Controller: New{{.Name}}Controller(),
+    {{range .metadatas}}{{.Name}}Controller: New{{.Name}}Controller(query),
     {{end}}
   }
 }
