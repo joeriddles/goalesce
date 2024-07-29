@@ -3,12 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
-	"log"
 	"os"
 
+	"github.com/joeriddles/goalesce/pkg"
 	"github.com/joeriddles/goalesce/pkg/config"
-	"github.com/joeriddles/goalesce/pkg/generate"
-	"github.com/joeriddles/goalesce/pkg/parse"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -76,29 +74,13 @@ func main() {
 		errExit("configuration error: %v\n", err)
 	}
 
-	if err := Run(cfg); err != nil {
+	if err := run(cfg); err != nil {
 		errExit(err.Error())
 	}
 }
 
-func Run(cfg *config.Config) error {
-	logger := log.Default()
-	parser := parse.NewParser(logger, cfg)
-
-	metadatas, err := parser.Parse(cfg.InputFolderPath)
-	if err != nil {
-		return err
-	}
-
-	generator, err := generate.NewGenerator(logger, cfg)
-	if err != nil {
-		return err
-	}
-	if err := generator.Generate(metadatas); err != nil {
-		return err
-	}
-
-	return nil
+func run(cfg *config.Config) error {
+	return pkg.Run(cfg)
 }
 
 func errExit(format string, args ...interface{}) {
