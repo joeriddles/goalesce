@@ -29,3 +29,12 @@ func TestToPascalCase(t *testing.T) {
 	assert.Equal(t, "HelloWorld", ToPascalCase("helloWorld"))
 	assert.Equal(t, "HelloWorld", ToPascalCase("HelloWorld"))
 }
+
+func TestStripModulePacakge(t *testing.T) {
+	assert.Equal(t, "User", StripModulePackage(`github.com/joeriddles/goalesce/pkg/model.User`, `github.com/joeriddles/goalesce`))
+	assert.Equal(t, "User", StripModulePackage(`command-line-arguments.User`, `command-line-arguments`))
+
+	assert.Equal(t, "gorm.DeletedAt", StripModulePackage("gorm.DeletedAt", `github.com/joeriddles/goalesce`))
+	assert.Equal(t, "time.Time", StripModulePackage("time.Time", `github.com/joeriddles/goalesce`))
+	assert.Equal(t, `github.come/some-user/some-package/pkg/model/User`, StripModulePackage(`github.come/some-user/some-package/pkg/model/User`, `github.com/joeriddles/goalesce`))
+}

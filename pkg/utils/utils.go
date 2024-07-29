@@ -106,3 +106,11 @@ func First[S ~[]E, E any](s S, f func(E) bool) (E, error) {
 	var empty E
 	return empty, errors.New("no matching object found in slice")
 }
+
+func StripModulePackage(s, moduleName string) string {
+	// moduleName = strings.ReplaceAll(moduleName, "/", `\/`)
+	pattern := fmt.Sprintf(`%v([/A-z-]+)?\.`, moduleName)
+	re := regexp.MustCompile(pattern)
+	s = re.ReplaceAllString(s, "")
+	return s
+}

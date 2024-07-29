@@ -1,10 +1,9 @@
 package entity
 
 import (
-	"fmt"
 	"go/types"
-	"regexp"
-	"strings"
+
+	"github.com/joeriddles/goalesce/pkg/utils"
 )
 
 type GormModelMetadata struct {
@@ -26,10 +25,9 @@ func (f *GormModelField) WithType(t types.Type, moduleName string) {
 	strType := t.String()
 
 	// Ignore special "command-line-arguments" package when no explict package is specified
-	strType = strings.ReplaceAll(strType, "command-line-arguments.", "")
+	strType = utils.StripModulePackage(strType, "command-line-arguments")
 
-	re := regexp.MustCompile(fmt.Sprintf("%v(/\\w+?)\\.", moduleName))
-	strType = re.ReplaceAllString(strType, "")
+	strType = utils.StripModulePackage(strType, moduleName)
 
 	f.Type = strType
 }
