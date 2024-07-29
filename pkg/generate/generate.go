@@ -773,6 +773,7 @@ func convertField(
 				isSrcPtr := strings.Contains(field.Type, "*")
 				dstElemType, isDstPtr := strings.CutPrefix(dstField.Type, "*")
 
+				// TODO(joeriddles): this is super hacky, change it
 				if to == "model" {
 					if isDstPtr {
 						if !isSrcPtr {
@@ -796,14 +797,24 @@ func convertField(
 		}
 	case *types.Slice:
 		if _, ok := dstType.(*types.Slice); ok {
+			isDstPtr := strings.Contains(dstField.Type, "*")
+
 			dstElemType := strings.ReplaceAll(dstField.Type, "*", "")
 			dstElemType = strings.ReplaceAll(dstElemType, "[]", "")
 
 			// TODO(joeriddles): this is super hacky, change it
 			if to == "model" {
-				return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToModels(*%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+				if isDstPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToModelsPtr(*%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+				} else {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToModels(*%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+				}
 			} else {
-				return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToApis(%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+				if isDstPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToApisPtr(%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+				} else {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToApis(%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+				}
 			}
 		}
 	}
