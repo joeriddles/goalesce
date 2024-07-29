@@ -76,12 +76,12 @@ func main() {
 		errExit("configuration error: %v\n", err)
 	}
 
-	if err := run(cfg); err != nil {
+	if err := Run(cfg); err != nil {
 		errExit(err.Error())
 	}
 }
 
-func run(cfg *config.Config) error {
+func Run(cfg *config.Config) error {
 	logger := log.Default()
 	parser := parse.NewParser(logger, cfg)
 
