@@ -108,13 +108,7 @@ func (p *parser) parseNamed(t *types.Named) *entity.GormModelMetadata {
 		metadata := p.parseStruct(u)
 		metadata.Name = t.Obj().Name()
 		return metadata
-	case *types.Map:
-		return nil
-	case *types.Array, *types.Slice:
-		return nil
-	case *types.Interface:
-		return nil
-	case *types.Signature:
+	case *types.Basic, *types.Map, *types.Array, *types.Slice, *types.Interface, *types.Signature:
 		return nil
 	default:
 		panic(fmt.Sprintf("parseNamed is impossible: %v", t.Obj().Name()))

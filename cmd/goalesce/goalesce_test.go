@@ -50,17 +50,10 @@ func Test_GenerateEcho(t *testing.T) {
 }
 
 func Test_GenerateExistingYaml(t *testing.T) {
-	cfg := &config.Config{
-		InputFolderPath: "../../examples/yaml",
-		OutputFile:      "../../examples/yaml/generated",
-		ModuleName:      "github.com/joeriddles/goalesce/examples/yaml",
-		ModelsPkg:       "github.com/joeriddles/goalesce/examples/yaml",
-		ClearOutputDir:  true,
-		PruneYaml:       true,
-		OpenApiFile:     "../../examples/yaml/openapi.yaml",
-	}
+	cfg, err := config.FromYamlFile("../../examples/yaml/config.yaml")
+	require.NoError(t, err)
 	require.NoError(t, cfg.Validate())
-	err := run(cfg)
+	err = run(cfg)
 	require.NoError(t, err)
 }
 

@@ -1,0 +1,8 @@
+input_folder_path: ./model
+output_file_path: ./generated
+module_name: github.com/joeriddles/goalesce/examples/yaml
+models_package: github.com/joeriddles/goalesce/examples/yaml/model
+query_package: github.com/joeriddles/goalesce/examples/yaml/query
+clear_output_dir: true
+prune_yaml: true
+openapi_file: ../../examples/yaml/openapi.yaml

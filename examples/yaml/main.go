@@ -1,10 +1,15 @@
-package basic
+package main
 
 import (
-	"gorm.io/gorm"
+	"github.com/joeriddles/goalesce/examples/yaml/model"
+	"gorm.io/gen"
 )
 
-type Yaml struct {
-	gorm.Model
-	Name string
+func main() {
+	g := gen.NewGenerator(gen.Config{
+		OutPath: "query",
+		Mode:    gen.WithoutContext | gen.WithQueryInterface,
+	})
+	g.ApplyBasic(model.Yaml{})
+	g.Execute()
 }

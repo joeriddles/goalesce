@@ -7,6 +7,16 @@ paths:
   /:
     get:
       summary: Get 'em
+      parameters:
+        - name: who
+          in: query
+          required: true
+          schema:
+            type: string
+            description: Who to get
+            enum:
+              - joe
+              - "not joe"
       responses:
         200:
           description: OK
