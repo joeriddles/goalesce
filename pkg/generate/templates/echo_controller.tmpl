@@ -52,7 +52,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Con
   {{range .createApi.Fields}}
   {{.|ConvertToModel}}{{end}}
 
-  createdModel, err := c.repository.Create(ctx, *model)
+  createdModel, err := c.repository.Create(ctx.Request().Context(), *model)
 	if err != nil {
 		return nil, err
 	}
