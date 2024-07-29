@@ -58,24 +58,6 @@ func Test_GenerateExistingYaml(t *testing.T) {
 }
 
 func Test_GenerateExclude(t *testing.T) {
-	cfg := &config.Config{
-		InputFolderPath: "../../examples/exclude",
-		OutputFile:      "../../examples/exclude/generated",
-		ModuleName:      "github.com/joeriddles/goalesce/examples/exclude",
-		ModelsPkg:       "github.com/joeriddles/goalesce/examples/exclude",
-		ClearOutputDir:  true,
-		PruneYaml:       true,
-		ExcludeModels: []string{
-			"Manufacturer",
-			"Model",
-		},
-	}
-	require.NoError(t, cfg.Validate())
-	err := run(cfg)
-	require.NoError(t, err)
-}
-
-func Test_GenerateExclude_Yaml(t *testing.T) {
 	cfg, err := config.FromYamlFile("../../examples/exclude/config.yaml")
 	require.NoError(t, err)
 	require.NoError(t, cfg.Validate())

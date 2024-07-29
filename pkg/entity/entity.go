@@ -12,6 +12,19 @@ type GormModelMetadata struct {
 	Embedded []*GormModelMetadata
 }
 
+func (m *GormModelMetadata) AllFields() []*GormModelField {
+	fields := []*GormModelField{}
+	for _, field := range m.Fields {
+		fields = append(fields, field)
+	}
+	for _, embedded := range m.Embedded {
+		for _, field := range embedded.AllFields() {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+
 type GormModelField struct {
 	Name string
 	Type string

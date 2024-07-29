@@ -126,10 +126,6 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	}
 
 	for _, metadata := range metadatas {
-		if slices.Contains(g.cfg.ExcludeModels, metadata.Name) {
-			continue
-		}
-
 		var apiMetadata *entity.GormModelMetadata
 		var createApiMetadata *entity.GormModelMetadata
 		createStr := fmt.Sprintf("Create%v", metadata.Name)
@@ -142,13 +138,19 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			}
 		}
 
-		if err := g.generateController(metadata); err != nil {
-			return err
-		}
 		if err := g.generateRepository(metadata); err != nil {
 			return err
 		}
-		if err := g.generateMapper(metadata, apiMetadata, createApiMetadata); err != nil {
+		if err := g.generateMapper(metadata, apiMetadata); err != nil {
+			return err
+		}
+
+		// Don't generate the controller for excluded models
+		if slices.Contains(g.cfg.ExcludeModels, metadata.Name) {
+			continue
+		}
+
+		if err := g.generateController(metadata, createApiMetadata); err != nil {
 			return err
 		}
 	}
@@ -333,7 +335,10 @@ func (g *generator) generateOpenApiRoutes(metadata *entity.GormModelMetadata) (s
 	return fp, nil
 }
 
-func (g *generator) generateController(metadata *entity.GormModelMetadata) error {
+func (g *generator) generateController(
+	metadata *entity.GormModelMetadata,
+	createApiMetadata *entity.GormModelMetadata,
+) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
 
 	template := "controller.tmpl"
@@ -350,6 +355,7 @@ func (g *generator) generateController(metadata *entity.GormModelMetadata) error
 			"typesPackage":         g.typesPackage,
 			"repositoryImportPath": g.repositoryPackage,
 			"model":                metadata,
+			"createApi":            createApiMetadata,
 		},
 	)
 }
@@ -391,15 +397,14 @@ func (g *generator) generateRepository(metadata *entity.GormModelMetadata) error
 func (g *generator) generateMapper(
 	metadata *entity.GormModelMetadata,
 	apiMetadata *entity.GormModelMetadata,
-	createApiMetadata *entity.GormModelMetadata,
 ) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
 
 	convertToModel := func(field *entity.GormModelField) string {
-		return convert(g.templates, field, metadata, "obj", "model")
+		return convertField(g.templates, field, metadata, "obj", "model")
 	}
 	convertToApi := func(field *entity.GormModelField) string {
-		return convert(g.templates, field, apiMetadata, "model", "obj")
+		return convertField(g.templates, field, apiMetadata, "model", "obj")
 	}
 	g.templates.Funcs(template.FuncMap{
 		"ConvertToModel": convertToModel,
@@ -415,7 +420,6 @@ func (g *generator) generateMapper(
 			"pkg":          g.cfg.ModelsPkg,
 			"model":        metadata,
 			"api":          apiMetadata,
-			"createApi":    createApiMetadata,
 		},
 	)
 }
@@ -509,6 +513,7 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"IsNullable":     isNullable,
 		"Not":            not,
 		"Types":          getTypesNamespace,
+		"WrapID":         wrapID,
 		// will be replaced per model
 		"ConvertToModel":           func() string { return "" },
 		"ConvertToApi":             func() string { return "" },
@@ -671,8 +676,24 @@ func toOpenApiType(typ string) *OpenApiType {
 	return result
 }
 
+func wrapID(model *entity.GormModelMetadata) string {
+	result := "id"
+
+	idField, err := utils.First(model.AllFields(), func(f *entity.GormModelField) bool {
+		return f.Name == "ID"
+	})
+	if err == nil {
+		if basicType, ok := idField.GetType().(*types.Basic); ok {
+			wrapper := basicType.Name()
+			result = fmt.Sprintf("%v(id)", wrapper)
+		}
+	}
+
+	return result
+}
+
 // Convert the field be converted to matching field on dst
-func convert(
+func convertField(
 	templates *template.Template,
 	field *entity.GormModelField,
 	dst *entity.GormModelMetadata,
@@ -748,18 +769,34 @@ func convert(
 
 			// TODO(joeriddles): add field to GormModelField for references to user-defined models?
 			if isComplexType(dstField.Type) && !strings.Contains(dstField.Type, ".") {
-				dstElemType, _ := strings.CutPrefix(dstField.Type, "*")
+				isSrcPtr := strings.Contains(field.Type, "*")
+				dstElemType, isDstPtr := strings.CutPrefix(dstField.Type, "*")
+
 				if to == "model" {
-					return fmt.Sprintf(`%v.%v = New%vMapper().MapToModel(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+					if isDstPtr {
+						if !isSrcPtr {
+							from = "&" + from
+						}
+						return fmt.Sprintf(`%v.%v = New%vMapper().MapToModelPtr(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+					} else {
+						return fmt.Sprintf(`%v.%v = New%vMapper().MapToModel(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+					}
 				} else {
-					return fmt.Sprintf(`%v.%v = New%vMapper().MapToApi(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+					if isDstPtr {
+						if !isSrcPtr {
+							from = "&" + from
+						}
+						return fmt.Sprintf(`%v.%v = New%vMapper().MapToApiPtr(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+					} else {
+						return fmt.Sprintf(`%v.%v = New%vMapper().MapToApi(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+					}
 				}
 			}
 		}
 	case *types.Slice:
 		if _, ok := dstType.(*types.Slice); ok {
-			dstElemType, _ := strings.CutPrefix(dstField.Type, "*")
-			dstElemType, _ = strings.CutPrefix(dstElemType, "[]")
+			dstElemType := strings.ReplaceAll(dstField.Type, "*", "")
+			dstElemType = strings.ReplaceAll(dstElemType, "[]", "")
 
 			// TODO(joeriddles): this is super hacky, change it
 			if to == "model" {

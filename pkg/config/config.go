@@ -109,6 +109,10 @@ func (o *Config) Validate() error {
 		errs = append(errs, errors.New("model_package must be specified"))
 	}
 
+	if o.QueryPkg == "" {
+		errs = append(errs, errors.New("query_package must be specified"))
+	}
+
 	if o.OutputFile == "" {
 		errs = append(errs, errors.New("output_file_path must be specified"))
 	}

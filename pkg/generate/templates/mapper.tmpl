@@ -6,7 +6,6 @@ import (
 
   model "{{.pkg}}"
   {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
-  "github.com/joeriddles/goalesce/pkg/automapper"
 )
 
 type {{.model.Name}}Mapper interface {
@@ -14,24 +13,17 @@ type {{.model.Name}}Mapper interface {
 	MapToModels(objs []{{Types}}{{.model.Name}}) []model.{{.model.Name}}
   MapToApi(model model.{{.model.Name}}) {{Types}}{{.model.Name}}
 	MapToApis(models []model.{{.model.Name}}) *[]{{Types}}{{.model.Name}}
-  MapCreate(obj {{Types}}Create{{.model.Name}}) model.{{.model.Name}}
-  MapUpdate(obj {{Types}}Update{{.model.Name}}) map[string]interface{}
+
+	MapToModelPtr(obj *{{Types}}{{.model.Name}}) *model.{{.model.Name}}
+	MapToModelsPtr(objs []{{Types}}{{.model.Name}}) []*model.{{.model.Name}}
+  MapToApiPtr(model *model.{{.model.Name}}) *{{Types}}{{.model.Name}}
+	MapToApisPtr(models []model.{{.model.Name}}) *[]*{{Types}}{{.model.Name}}
 }
 
-type {{.model.Name|ToCamelCase}}Mapper struct {
-  automapper       automapper.AutoMapper[model.{{.model.Name}}, {{Types}}{{.model.Name}}]
-  createAutomapper automapper.AutoMapper[model.{{.model.Name}}, {{Types}}Create{{.model.Name}}]
-  modelMapper      _Mapper
-	updateMapper     _Mapper
-}
+type {{.model.Name|ToCamelCase}}Mapper struct {}
 
 func New{{.model.Name}}Mapper() {{.model.Name}}Mapper {
-  return &{{.model.Name|ToCamelCase}}Mapper{
-    automapper:       automapper.NewAutoMapper(model.{{.model.Name}}{}, {{Types}}{{.model.Name}}{}),
-    createAutomapper: automapper.NewAutoMapper(model.{{.model.Name}}{}, {{Types}}Create{{.model.Name}}{}),
-    modelMapper:      _NewModelMapper(),
-		updateMapper:     _NewUpdateMapper(),
-  }
+  return &{{.model.Name|ToCamelCase}}Mapper{}
 }
 
 func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModel(obj {{Types}}{{.model.Name}}) model.{{.model.Name}} {
@@ -70,18 +62,31 @@ func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApis(models []model.{{.model.Na
 	return &objs
 }
 
-func (m *{{.model.Name|ToCamelCase}}Mapper) MapCreate(obj {{Types}}Create{{.model.Name}}) model.{{.model.Name}} {
-	model := &model.{{.model.Name}}{}
-  {{range .createApi.Fields}}
-  {{.|ConvertToModel}}
-  {{end}}
-	return *model
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModelPtr(obj *{{Types}}{{.model.Name}}) *model.{{.model.Name}} {
+	model := m.MapToModel(*obj)
+	return &model
 }
 
-func (m *{{.model.Name|ToCamelCase}}Mapper) MapUpdate(obj {{Types}}Update{{.model.Name}}) map[string]interface{} {
-	update := map[string]interface{}{}
-  {{range .model.Fields}}
-  update["{{.Name}}"] = obj.{{.Name}}
-  {{end}}
-	return update
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToModelsPtr(objs []{{Types}}{{.model.Name}}) []*model.{{.model.Name}} {
+	models := m.MapToModels(objs)
+	modelPtrs := []*model.{{.model.Name}}{}
+	for _, obj := range models {
+		modelPtrs = append(modelPtrs, &obj)
+	}
+	return modelPtrs
+}
+
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApiPtr(model *model.{{.model.Name}}) *{{Types}}{{.model.Name}} {
+	obj := m.MapToApi(*model)
+	return &obj
+	
+}
+
+func (m *{{.model.Name|ToCamelCase}}Mapper) MapToApisPtr(models []model.{{.model.Name}}) *[]*{{Types}}{{.model.Name}} {
+	objs := m.MapToApis(models)
+	objPtrs := []*{{Types}}{{.model.Name}}{}
+	for _, obj := range *objs {
+		objPtrs = append(objPtrs, &obj)
+	}
+	return &objPtrs
 }

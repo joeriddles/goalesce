@@ -45,8 +45,12 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx context.C
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx context.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error) {
-  model := c.mapper.MapCreate(*request.Body)
-  createdModel, err := c.repository.Create(ctx, model)
+	obj := request.Body
+  model := &model.{{.model.Name}}{}
+  {{range .createApi.Fields}}
+  {{.|ConvertToModel}}{{end}}
+
+  createdModel, err := c.repository.Create(ctx, *model)
 	if err != nil {
 		return nil, err
 	}
@@ -71,9 +75,12 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx context
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {
-	var err error
-  update := c.mapper.MapUpdate(*request.Body)
-  if _, err = c.repository.Update(ctx, request.ID, update); err != nil {
+	obj := request.Body
+	update := map[string]interface{}{}
+  {{range .model.Fields}}
+  update["{{.Name}}"] = obj.{{.Name}}  {{end}}
+
+  if _, err := c.repository.Update(ctx, request.ID, update); err != nil {
     return nil, err
   }
   return {{Types}}Put{{.model.Name}}ID204Response{}, nil

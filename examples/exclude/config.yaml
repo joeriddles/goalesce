@@ -1,8 +1,9 @@
-input_folder_path: "./"
-output_file_path: "./generated/exclude"
-module_name: "github.com/joeriddles/goalesce/examples/exclude"
-models_package: "github.com/joeriddles/goalesce/examples/exclude"
+input_folder_path: ./model
+output_file_path: ./generated
+module_name: github.com/joeriddles/goalesce/examples/exclude
+models_package: github.com/joeriddles/goalesce/examples/exclude/model
+query_package: github.com/joeriddles/goalesce/examples/exclude/query
 clear_output_dir: true
 exclude_models:
   - Manufacturer
-  - Model
+  - VehicleModel

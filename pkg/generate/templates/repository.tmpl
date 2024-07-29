@@ -57,7 +57,7 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Get(
   ctx context.Context,
   id int64,
 ) (*model.{{.model.Name}}, error) {
-  return r.query.{{.model.Name}}.Where(r.query.{{.model.Name}}.ID.Eq(uint(id))).First()
+  return r.query.{{.model.Name}}.Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).First()
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Create(
@@ -75,7 +75,7 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Update(
 ) (*model.{{.model.Name}}, error) {
   {{.model.Name|ToCamelCase}} := &model.{{.model.Name}}{}
 	_, err := r.query.{{.model.Name}}.
-		Where(r.query.{{.model.Name}}.ID.Eq(uint(id))).
+		Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).
 		Omit(r.query.{{.model.Name}}.ID).
 		Returning({{.model.Name|ToCamelCase}}).
 		Updates(update)
@@ -87,7 +87,7 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Delete(
   id int64,
 ) error {
   _, err := r.query.{{.model.Name}}.
-		Where(r.query.{{.model.Name}}.ID.Eq(uint(id))).
+		Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).
 		Delete()
 	return err
 }
