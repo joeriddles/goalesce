@@ -5,13 +5,11 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/joeriddles/goalesce/pkg/config"
-	"github.com/joeriddles/goalesce/pkg/entity"
 	"github.com/joeriddles/goalesce/pkg/generate"
 	"github.com/joeriddles/goalesce/pkg/parse"
+	"golang.org/x/tools/go/packages"
 )
 
 var (
@@ -25,6 +23,8 @@ var (
 	flagAllowCustomModels bool
 	flagPruneYaml         bool
 )
+
+const LoadAll = packages.NeedName | packages.NeedFiles | packages.NeedCompiledGoFiles | packages.NeedImports | packages.NeedDeps | packages.NeedExportFile | packages.NeedTypes | packages.NeedTypesSizes | packages.NeedSyntax
 
 func main() {
 	flag.BoolVar(&flagPrintUsage, "help", false, "Show this help and exit.")
@@ -82,29 +82,12 @@ func main() {
 }
 
 func run(cfg *config.Config) error {
-	folderPath := cfg.InputFolderPath
-	entries, err := os.ReadDir(folderPath)
-	if err != nil {
-		return err
-	}
-
 	logger := log.Default()
 	parser := parse.NewParser(logger, cfg)
 
-	metadatas := []*entity.GormModelMetadata{}
-	for _, entry := range entries {
-		filename := entry.Name()
-		if !strings.HasSuffix(filename, ".go") {
-			continue
-		}
-
-		entryFilepath := filepath.Join(folderPath, filename)
-		metadatasForEntry, err := parser.Parse(entryFilepath)
-		if err != nil {
-			return err
-		}
-
-		metadatas = append(metadatas, metadatasForEntry...)
+	metadatas, err := parser.Parse(cfg.InputFolderPath)
+	if err != nil {
+		return err
 	}
 
 	generator, err := generate.NewGenerator(logger, cfg)

@@ -38,6 +38,7 @@ type Generator interface {
 type generator struct {
 	logger            *log.Logger
 	cfg               *config.Config
+	templates         *template.Template
 	relativePkgPath   string
 	typesPackage      *string
 	repositoryPackage string
@@ -76,22 +77,25 @@ func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 		repositoryPackage = filepath.Join(cfg.ModuleName, relPkg)
 	}
 
-	return &generator{
+	g := &generator{
 		logger:            logger,
 		cfg:               cfg,
 		relativePkgPath:   relPath,
 		typesPackage:      typesPackage,
 		repositoryPackage: repositoryPackage,
-	}, nil
+	}
+
+	t := template.New("gorm_oapi_codegen")
+	if err := g.loadTemplates(templates, t); err != nil {
+		return nil, err
+	}
+	g.templates = t
+
+	return g, nil
 }
 
 // Generate from GORM model metadata
 func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
-	t := template.New("gorm_oapi_codegen")
-	if err := g.loadTemplates(templates, t); err != nil {
-		return err
-	}
-
 	if g.cfg.ClearOutputDir {
 		if err := os.RemoveAll(g.cfg.OutputFile); err != nil {
 			return err
@@ -106,7 +110,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		return err
 	}
 
-	if err := g.generateOpenApiYaml(t, metadatas); err != nil {
+	if err := g.generateOpenApiYaml(metadatas); err != nil {
 		return err
 	}
 
@@ -116,7 +120,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 
 	// parse generated API types
 	parser := parse.NewParser(g.logger, g.cfg)
-	apiMetadatas, err := parser.Parse(g.cfg.TypesCodegen.OutputFile)
+	apiMetadatas, err := parser.Parse(filepath.Dir(g.cfg.TypesCodegen.OutputFile))
 	if err != nil {
 		return err
 	}
@@ -138,13 +142,13 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			}
 		}
 
-		if err := g.generateController(t, metadata); err != nil {
+		if err := g.generateController(metadata); err != nil {
 			return err
 		}
-		if err := g.generateRepository(t, metadata); err != nil {
+		if err := g.generateRepository(metadata); err != nil {
 			return err
 		}
-		if err := g.generateMapper(t, metadata, apiMetadata, createApiMetadata); err != nil {
+		if err := g.generateMapper(metadata, apiMetadata, createApiMetadata); err != nil {
 			return err
 		}
 	}
@@ -155,26 +159,26 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			filteredMetadatas = append(filteredMetadatas, metadata)
 		}
 	}
-	if err := g.generateServer(t, filteredMetadatas); err != nil {
+	if err := g.generateServer(filteredMetadatas); err != nil {
 		return err
 	}
 
 	if g.cfg.GenerateMain {
-		if err := g.generateMain(t); err != nil {
+		if err := g.generateMain(); err != nil {
 			return err
 		}
 	}
 
-	if err := g.generateMapperUtil(t); err != nil {
+	if err := g.generateMapperUtil(); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (g *generator) generateOpenApiYaml(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+func (g *generator) generateOpenApiYaml(metadatas []*entity.GormModelMetadata) error {
 	for _, metadata := range metadatas {
-		_, err := g.generateOpenApiRoutes(t, metadata)
+		_, err := g.generateOpenApiRoutes(metadata)
 		if err != nil {
 			return err
 		}
@@ -314,7 +318,7 @@ func (g *generator) generateOpenApiBase(metadatas []*entity.GormModelMetadata) e
 	return nil
 }
 
-func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity.GormModelMetadata) (string, error) {
+func (g *generator) generateOpenApiRoutes(metadata *entity.GormModelMetadata) (string, error) {
 	fp := filepath.Join(g.cfg.OutputFile, fmt.Sprintf("%v.gen.yaml", utils.ToSnakeCase(metadata.Name)))
 	f, err := os.Create(fp)
 	if err != nil {
@@ -323,13 +327,13 @@ func (g *generator) generateOpenApiRoutes(t *template.Template, metadata *entity
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
-	t.ExecuteTemplate(w, "openapi_controller.yaml", metadata)
+	g.templates.ExecuteTemplate(w, "openapi_controller.yaml", metadata)
 	w.Flush()
 
 	return fp, nil
 }
 
-func (g *generator) generateController(t *template.Template, metadata *entity.GormModelMetadata) error {
+func (g *generator) generateController(metadata *entity.GormModelMetadata) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
 
 	template := "controller.tmpl"
@@ -338,7 +342,6 @@ func (g *generator) generateController(t *template.Template, metadata *entity.Go
 	}
 
 	return g.generateGo(
-		t,
 		fp,
 		template,
 		map[string]interface{}{
@@ -351,7 +354,7 @@ func (g *generator) generateController(t *template.Template, metadata *entity.Go
 	)
 }
 
-func (g *generator) generateServer(t *template.Template, metadatas []*entity.GormModelMetadata) error {
+func (g *generator) generateServer(metadatas []*entity.GormModelMetadata) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", "server.gen.go")
 
 	template := "server.tmpl"
@@ -360,7 +363,6 @@ func (g *generator) generateServer(t *template.Template, metadatas []*entity.Gor
 	}
 
 	return g.generateGo(
-		t,
 		fp,
 		template,
 		map[string]interface{}{
@@ -372,11 +374,10 @@ func (g *generator) generateServer(t *template.Template, metadatas []*entity.Gor
 	)
 }
 
-func (g *generator) generateRepository(t *template.Template, metadata *entity.GormModelMetadata) error {
+func (g *generator) generateRepository(metadata *entity.GormModelMetadata) error {
 	filename := fmt.Sprintf("%v_repository.gen.go", utils.ToSnakeCase(metadata.Name))
 	fp := filepath.Join(g.cfg.RepositoryConfiguration.OutputFile, filename)
 	return g.generateGo(
-		t,
 		fp,
 		"repository.tmpl",
 		map[string]interface{}{
@@ -388,7 +389,6 @@ func (g *generator) generateRepository(t *template.Template, metadata *entity.Go
 }
 
 func (g *generator) generateMapper(
-	t *template.Template,
 	metadata *entity.GormModelMetadata,
 	apiMetadata *entity.GormModelMetadata,
 	createApiMetadata *entity.GormModelMetadata,
@@ -396,18 +396,17 @@ func (g *generator) generateMapper(
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
 
 	convertToModel := func(field *entity.GormModelField) string {
-		return convert(field, metadata, "obj", "model")
+		return convert(g.templates, field, metadata, "obj", "model")
 	}
 	convertToApi := func(field *entity.GormModelField) string {
-		return convert(field, apiMetadata, "model", "obj")
+		return convert(g.templates, field, apiMetadata, "model", "obj")
 	}
-	t.Funcs(template.FuncMap{
+	g.templates.Funcs(template.FuncMap{
 		"ConvertToModel": convertToModel,
 		"ConvertToApi":   convertToApi,
 	})
 
 	return g.generateGo(
-		t,
 		fp,
 		"mapper.tmpl",
 		map[string]interface{}{
@@ -421,11 +420,10 @@ func (g *generator) generateMapper(
 	)
 }
 
-func (g *generator) generateMain(t *template.Template) error {
+func (g *generator) generateMain() error {
 	fp := filepath.Join(g.cfg.OutputFile, "main.go")
 	apiImportPath := filepath.Join(g.cfg.ModuleName, g.relativePkgPath, "api")
 	return g.generateGo(
-		t,
 		fp,
 		"main.tmpl",
 		map[string]interface{}{
@@ -434,10 +432,9 @@ func (g *generator) generateMain(t *template.Template) error {
 	)
 }
 
-func (g *generator) generateMapperUtil(t *template.Template) error {
+func (g *generator) generateMapperUtil() error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", "mapper_util.gen.go")
 	return g.generateGo(
-		t,
 		fp,
 		"mapper_util.tmpl",
 		map[string]interface{}{
@@ -447,7 +444,7 @@ func (g *generator) generateMapperUtil(t *template.Template) error {
 }
 
 // Generate formatted Go code at the filepath with the template
-func (g *generator) generateGo(t *template.Template, fp string, template string, data any) error {
+func (g *generator) generateGo(fp string, template string, data any) error {
 	f, err := os.Create(fp)
 	if err != nil {
 		return err
@@ -457,7 +454,7 @@ func (g *generator) generateGo(t *template.Template, fp string, template string,
 	// Write the template to in-memory buffer
 	var b bytes.Buffer
 	w := bufio.NewWriter(&b)
-	if err := t.ExecuteTemplate(w, template, data); err != nil {
+	if err := g.templates.ExecuteTemplate(w, template, data); err != nil {
 		return err
 	}
 	if err := w.Flush(); err != nil {
@@ -615,15 +612,15 @@ func mapToApiType(field entity.GormModelField) string {
 }
 
 // TODO(joeriddles): Refactor this monstrosity
-func toOpenApiType(t string) *OpenApiType {
+func toOpenApiType(typ string) *OpenApiType {
 	var result *OpenApiType
 	nullable := false
 
-	if isPointer := strings.HasPrefix(t, "*"); isPointer {
-		t = t[1:]
+	if isPointer := strings.HasPrefix(typ, "*"); isPointer {
+		typ = typ[1:]
 		nullable = true
-	} else if isArray := strings.HasPrefix(t, "[]"); isArray {
-		elemType := toOpenApiType(t[2:])
+	} else if isArray := strings.HasPrefix(typ, "[]"); isArray {
+		elemType := toOpenApiType(typ[2:])
 		items := map[string]string{}
 		if elemType.Ref != nil {
 			items["$ref"] = *elemType.Ref
@@ -639,7 +636,7 @@ func toOpenApiType(t string) *OpenApiType {
 	}
 
 	if result == nil {
-		switch t {
+		switch typ {
 		case "string":
 			result = &OpenApiType{Type: "string", Nullable: nullable}
 		case "time.Time":
@@ -660,13 +657,13 @@ func toOpenApiType(t string) *OpenApiType {
 			result = &OpenApiType{Type: "boolean", Nullable: nullable}
 		default:
 			var typeRef *string = nil
-			if !isSimpleType(t) {
-				typeRefVal := fmt.Sprintf("./%v.gen.yaml#/components/schemas/%v", utils.ToSnakeCase(t), t)
+			if !isSimpleType(typ) {
+				typeRefVal := fmt.Sprintf("./%v.gen.yaml#/components/schemas/%v", utils.ToSnakeCase(typ), typ)
 				typeRef = &typeRefVal
-				result = &OpenApiType{Type: t, Ref: typeRef, Nullable: nullable}
+				result = &OpenApiType{Type: typ, Ref: typeRef, Nullable: nullable}
 			} else {
 				// TODO(joeriddles): panic?
-				result = &OpenApiType{Type: t, Nullable: nullable}
+				result = &OpenApiType{Type: typ, Nullable: nullable}
 			}
 		}
 	}
@@ -675,7 +672,12 @@ func toOpenApiType(t string) *OpenApiType {
 }
 
 // Convert the field be converted to matching field on dst
-func convert(field *entity.GormModelField, dst *entity.GormModelMetadata, from, to string) string {
+func convert(
+	templates *template.Template,
+	field *entity.GormModelField,
+	dst *entity.GormModelMetadata,
+	from, to string,
+) string {
 	match := func(e *entity.GormModelField) bool {
 		return e.Name == field.Name
 	}
@@ -697,10 +699,15 @@ func convert(field *entity.GormModelField, dst *entity.GormModelMetadata, from, 
 	srcType := field.GetType()
 	dstType := dstField.GetType()
 
+	isSrcPtr := false
 	if ptrSrc, ok := srcType.(*types.Pointer); ok {
+		isSrcPtr = true
 		srcType = ptrSrc.Elem()
 	}
+
+	isDstPtr := false
 	if ptrDst, ok := dstType.(*types.Pointer); ok {
+		isDstPtr = true
 		dstType = ptrDst.Elem()
 	}
 
@@ -709,6 +716,24 @@ func convert(field *entity.GormModelField, dst *entity.GormModelMetadata, from, 
 		switch d := dstType.(type) {
 		case *types.Basic:
 			if s.Kind() != d.Kind() && types.ConvertibleTo(s, d) {
+				if isSrcPtr && isDstPtr {
+					var b bytes.Buffer
+					w := bufio.NewWriter(&b)
+					if err := templates.ExecuteTemplate(w, "mapper_ptr_to_ptr.tmpl", map[string]string{
+						"dst":      to,
+						"dstField": dstField.Name,
+						"dstType":  d.Name(),
+						"src":      from,
+						"srcField": field.Name,
+					}); err != nil {
+						return err.Error()
+					}
+					if err := w.Flush(); err != nil {
+						return err.Error()
+					}
+					return b.String()
+				}
+
 				return fmt.Sprintf("%v.%v = %v(%v.%v)", to, dstField.Name, d.Name(), from, field.Name)
 			}
 		}
@@ -748,11 +773,11 @@ func convert(field *entity.GormModelField, dst *entity.GormModelMetadata, from, 
 	return fmt.Sprintf("%v.%v = %v.%v", to, dstField.Name, from, field.Name)
 }
 
-func isComplexType(t string) bool {
-	if t == "" {
+func isComplexType(typ string) bool {
+	if typ == "" {
 		return false
 	}
-	return strings.HasPrefix(t, "*") || !strings.HasPrefix(t, "[]") || t[0:1] != strings.ToUpper(t[0:1])
+	return strings.HasPrefix(typ, "*") || !strings.HasPrefix(typ, "[]") || typ[0:1] != strings.ToUpper(typ[0:1])
 }
 
 func isSimpleType(t string) bool {

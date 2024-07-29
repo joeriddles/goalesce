@@ -95,7 +95,7 @@ func FindGoMod(startPath string, module string) (string, error) {
 		absPath = parentPath
 	}
 
-	return "", fmt.Errorf("go.mod file not found")
+	return "", fmt.Errorf("go.mod file not found for mod: %v", module)
 }
 
 func First[S ~[]E, E any](s S, f func(E) bool) (E, error) {

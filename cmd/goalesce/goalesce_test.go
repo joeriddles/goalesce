@@ -111,3 +111,11 @@ func Test_Generate_RepositoryConfig(t *testing.T) {
 	err = run(cfg)
 	require.NoError(t, err)
 }
+
+func Test_Generate_MultipleModelFiles(t *testing.T) {
+	cfg, err := config.FromYamlFile("../../examples/multiple_files/config.yaml")
+	require.NoError(t, err)
+
+	err = run(cfg)
+	require.NoError(t, err)
+}

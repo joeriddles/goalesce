@@ -19,11 +19,18 @@ type GormModelField struct {
 	t types.Type
 }
 
-func (f *GormModelField) WithType(t types.Type) {
+func (f *GormModelField) WithType(t types.Type, moduleName string) {
 	f.t = t
 	strType := t.String()
+
 	// Ignore special "command-line-arguments" package when no explict package is specified
 	strType = strings.ReplaceAll(strType, "command-line-arguments.", "")
+
+	if strings.HasPrefix(strType, moduleName) {
+		parts := strings.Split(strType, ".")
+		strType = parts[len(parts)-1]
+	}
+
 	f.Type = strType
 }
 

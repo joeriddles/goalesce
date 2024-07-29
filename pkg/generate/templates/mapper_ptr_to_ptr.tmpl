@@ -1,0 +1,7 @@
+{{.dst}}.{{.dstField}} = func() *{{.dstType}} {
+  var {{.dstField|ToCamelCase}} {{.dstType}}
+  if {{.src}}.{{.srcField}} != nil {
+    {{.dstField|ToCamelCase}} = {{.dstType}}(*{{.src}}.{{.srcField}})
+  }
+  return &{{.dstField|ToCamelCase}}
+}()

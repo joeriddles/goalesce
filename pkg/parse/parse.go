@@ -36,7 +36,7 @@ func NewParser(
 func (p *parser) Parse(pkgStr string) ([]*entity.GormModelMetadata, error) {
 	conf := &packages.Config{
 		Mode: LoadAll,
-		Dir:  p.cfg.InputFolderPath,
+		Dir:  pkgStr,
 	}
 	pkgs, err := packages.Load(conf, pkgStr)
 	if err != nil {
@@ -106,14 +106,18 @@ func (p *parser) parseNamed(t *types.Named) *entity.GormModelMetadata {
 	switch u := t.Underlying().(type) {
 	case *types.Struct:
 		metadata := p.parseStruct(u)
-		metadata.Name = t.Obj().Name() // ?
+		metadata.Name = t.Obj().Name()
 		return metadata
 	case *types.Map:
 		return nil
 	case *types.Array, *types.Slice:
 		return nil
+	case *types.Interface:
+		return nil
+	case *types.Signature:
+		return nil
 	default:
-		panic("impossible")
+		panic(fmt.Sprintf("parseNamed is impossible: %v", t.Obj().Name()))
 	}
 }
 
@@ -137,7 +141,7 @@ func (p *parser) parseStruct(t *types.Struct) *entity.GormModelMetadata {
 
 		modelField := &entity.GormModelField{}
 		modelField.Name = field.Name()
-		modelField.WithType(field.Type())
+		modelField.WithType(field.Type(), p.cfg.ModuleName)
 		modelField.Tag = t.Tag(i)
 		metadata.Fields = append(metadata.Fields, modelField)
 	}
