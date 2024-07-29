@@ -126,16 +126,20 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 	}
 
 	for _, metadata := range metadatas {
-		var apiMetadata *entity.GormModelMetadata
-		var createApiMetadata *entity.GormModelMetadata
+		apiMetadata, err := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
+			return m.Name == metadata.Name
+		})
+		if err != nil {
+			return fmt.Errorf("could not find apiMetadata for %v", metadata.Name)
+		}
+
 		createStr := fmt.Sprintf("Create%v", metadata.Name)
-		for _, _apiMetadata := range apiMetadatas {
-			if metadata.Name == _apiMetadata.Name {
-				apiMetadata = _apiMetadata
-			}
-			if createStr == _apiMetadata.Name {
-				createApiMetadata = _apiMetadata
-			}
+		createApiMetadata, err := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
+			return m.Name == metadata.Name
+		})
+		if err != nil {
+			g.logger.Printf("could not find createApiMetadata for %v", createStr)
+			continue
 		}
 
 		if err := g.generateRepository(metadata); err != nil {
