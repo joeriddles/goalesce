@@ -139,18 +139,18 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			return m.Name == createStr
 		})
 
-		if err := g.generateRepository(metadata); err != nil {
-			return err
-		}
 		if err := g.generateMapper(metadata, apiMetadata); err != nil {
 			return err
 		}
 
-		// Don't generate the controller for excluded models
+		// Don't generate anything but the mapper for excluded models
 		if slices.Contains(g.cfg.ExcludeModels, metadata.Name) {
 			continue
 		}
 
+		if err := g.generateRepository(metadata); err != nil {
+			return err
+		}
 		if err := g.generateController(metadata, createApiMetadata); err != nil {
 			return err
 		}
