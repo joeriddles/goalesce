@@ -21,12 +21,12 @@ func (w *noopWriter) Write(p []byte) (n int, err error) {
 var noopLogger *log.Logger = log.New(&noopWriter{}, "", 0)
 
 func TestParse_Basic(t *testing.T) {
-	cfg := &config.Config{
-		AllowCustomModels: false,
-		InputFolderPath:   "../../examples/basic",
-	}
+	cfg, err := config.FromYamlFile("../../examples/basic/config.yaml")
+	require.NoError(t, err)
+	require.NoError(t, cfg.Validate())
+
 	parser := NewParser(noopLogger, cfg)
-	actual, err := parser.Parse("../../examples/basic/model")
+	actual, err := parser.Parse(cfg.InputFolderPath)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(actual))
 
@@ -71,12 +71,12 @@ func TestParse_Basic(t *testing.T) {
 }
 
 func TestParse_Cars(t *testing.T) {
-	cfg := &config.Config{
-		AllowCustomModels: false,
-		InputFolderPath:   "../../examples/cars",
-	}
+	cfg, err := config.FromYamlFile("../../examples/cars/config.yaml")
+	require.NoError(t, err)
+	require.NoError(t, cfg.Validate())
+
 	parser := NewParser(noopLogger, cfg)
-	actual, err := parser.Parse("../../examples/cars/model")
+	actual, err := parser.Parse(cfg.InputFolderPath)
 	require.NoError(t, err)
 	assert.Equal(t, 5, len(actual))
 
@@ -89,7 +89,7 @@ func TestParse_Cars(t *testing.T) {
 			},
 			{
 				Name: "Vehicles",
-				Type: "[]github.com/joeriddles/goalesce/examples/cars/model.VehicleModel",
+				Type: "[]VehicleModel",
 			},
 		},
 		Embedded: []*entity.GormModelMetadata{
@@ -133,11 +133,11 @@ func TestParse_Cars(t *testing.T) {
 			},
 			{
 				Name: "Manufacturer",
-				Type: "github.com/joeriddles/goalesce/examples/cars/model.Manufacturer",
+				Type: "Manufacturer",
 			},
 			{
 				Name: "Parts",
-				Type: "[]github.com/joeriddles/goalesce/examples/cars/model.Part",
+				Type: "[]Part",
 				Tag:  "gorm:\"many2many:vehicle_parts;\"",
 			},
 		},
@@ -184,12 +184,12 @@ func TestParse_Cars(t *testing.T) {
 }
 
 func TestParse_Custom(t *testing.T) {
-	cfg := &config.Config{
-		AllowCustomModels: true,
-		InputFolderPath:   "../../examples/custom",
-	}
+	cfg, err := config.FromYamlFile("../../examples/custom/config.yaml")
+	require.NoError(t, err)
+	require.NoError(t, cfg.Validate())
+
 	parser := NewParser(noopLogger, cfg)
-	actual, err := parser.Parse("../../examples/custom/model")
+	actual, err := parser.Parse(cfg.InputFolderPath)
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(actual))
 

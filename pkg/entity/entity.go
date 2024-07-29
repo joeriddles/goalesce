@@ -1,7 +1,9 @@
 package entity
 
 import (
+	"fmt"
 	"go/types"
+	"regexp"
 	"strings"
 )
 
@@ -26,10 +28,8 @@ func (f *GormModelField) WithType(t types.Type, moduleName string) {
 	// Ignore special "command-line-arguments" package when no explict package is specified
 	strType = strings.ReplaceAll(strType, "command-line-arguments.", "")
 
-	if strings.HasPrefix(strType, moduleName) {
-		parts := strings.Split(strType, ".")
-		strType = parts[len(parts)-1]
-	}
+	re := regexp.MustCompile(fmt.Sprintf("%v(/\\w+?)\\.", moduleName))
+	strType = re.ReplaceAllString(strType, "")
 
 	f.Type = strType
 }
