@@ -2,6 +2,8 @@
 
 `goalesce` is a command-line tool to generate OpenAPI CRUD routes from GORM models.
 
+---
+![Test workflow](https://github.com/joeriddles/goalesce/actions/workflows/test.yaml/badge.svg) ![Release workflow](https://github.com/joeriddles/goalesce/actions/workflows/release.yaml/badge.svg)
 
 ## Features
 - Generate [OpenAPI YAML](https://swagger.io/specification/) files from [GORM](https://gorm.io/) model types
