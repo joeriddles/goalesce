@@ -42,6 +42,9 @@ func (m *{{.Name|ToCamelCase}}Mapper) MapSlice(models []model.{{.dst.Name}}) *[]
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapPtr(model *model.{{.dst.Name}}) *{{Types}}{{.dst.Name}} {
+	if model == nil {
+		return nil
+	}
 	obj := m.Map(*model)
 	return &obj
 }
