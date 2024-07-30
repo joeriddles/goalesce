@@ -107,6 +107,19 @@ func First[S ~[]E, E any](s S, f func(E) bool) (E, error) {
 	return empty, errors.New("no matching object found in slice")
 }
 
+func Map[S ~[]E, E any, R any](s S, f func(E) R) []R {
+	result := []R{}
+	for _, e := range s {
+		r := f(e)
+		result = append(result, r)
+	}
+	return result
+}
+
+func MapPointers[S ~[]*R, R any](s S) []R {
+	return Map(s, func(val *R) R { return *val })
+}
+
 func StripModulePackage(s, moduleName string) string {
 	// moduleName = strings.ReplaceAll(moduleName, "/", `\/`)
 	pattern := fmt.Sprintf(`%v([/A-z-]+)?\.`, moduleName)

@@ -88,3 +88,11 @@ func Test_Generate_MultipleModelFiles(t *testing.T) {
 	err = run(cfg)
 	require.NoError(t, err)
 }
+
+func Test_Generate_Pointers(t *testing.T) {
+	cfg, err := config.FromYamlFile("../../examples/pointers/config.yaml")
+	require.NoError(t, err)
+	require.NoError(t, cfg.Validate())
+	err = run(cfg)
+	require.NoError(t, err)
+}

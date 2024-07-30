@@ -10,17 +10,14 @@ type GormModelMetadata struct {
 	Name     string
 	Fields   []*GormModelField
 	Embedded []*GormModelMetadata
+	IsApi    bool
 }
 
 func (m *GormModelMetadata) AllFields() []*GormModelField {
 	fields := []*GormModelField{}
-	for _, field := range m.Fields {
-		fields = append(fields, field)
-	}
+	fields = append(fields, m.Fields...)
 	for _, embedded := range m.Embedded {
-		for _, field := range embedded.AllFields() {
-			fields = append(fields, field)
-		}
+		fields = append(fields, embedded.AllFields()...)
 	}
 	return fields
 }

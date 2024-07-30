@@ -1,0 +1,7 @@
+input_folder_path: ./model
+output_file_path: ./generated
+module_name: github.com/joeriddles/goalesce/examples/pointers
+models_package: github.com/joeriddles/goalesce/examples/pointers/model
+query_package: github.com/joeriddles/goalesce/examples/pointers/query
+clear_output_dir: true
+allow_custom_models: true

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"go/types"
 	"io/fs"
@@ -133,6 +134,7 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			g.logger.Printf("could not find apiMetadata for %v", metadata.Name)
 			continue
 		}
+		apiMetadata.IsApi = true
 
 		createStr := fmt.Sprintf("Create%v", metadata.Name)
 		createApiMetadata, _ := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
@@ -400,6 +402,7 @@ func (g *generator) generateMapper(
 	apiMetadata *entity.GormModelMetadata,
 ) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
+	apiFp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_api_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
 
 	convertToModel := func(field *entity.GormModelField) string {
 		return convertField(g.templates, field, metadata, "obj", "model")
@@ -412,17 +415,48 @@ func (g *generator) generateMapper(
 		"ConvertToApi":   convertToApi,
 	})
 
-	return g.generateGo(
+	errs := []error{}
+
+	err := g.generateGo(
 		fp,
-		"mapper.tmpl",
+		"model_mapper.tmpl",
 		map[string]interface{}{
 			"package":      g.cfg.ServerCodegen.PackageName,
 			"typesPackage": g.typesPackage,
 			"pkg":          g.cfg.ModelsPkg,
-			"model":        metadata,
-			"api":          apiMetadata,
+			"Name":         metadata.Name,
+			"src":          apiMetadata,
+			"dst":          metadata,
 		},
 	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	err = g.generateGo(
+		apiFp,
+		"api_mapper.tmpl",
+		map[string]interface{}{
+			"package":      g.cfg.ServerCodegen.PackageName,
+			"typesPackage": g.typesPackage,
+			"pkg":          g.cfg.ModelsPkg,
+			"Name":         apiMetadata.Name + "Api",
+			"src":          metadata,
+			"dst":          apiMetadata,
+		},
+	)
+	if err != nil {
+		errs = append(errs, err)
+	}
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+
+	return nil
 }
 
 func (g *generator) generateMain() error {
@@ -619,14 +653,17 @@ func mapToApiType(field entity.GormModelField) string {
 
 // TODO(joeriddles): Refactor this monstrosity
 func toOpenApiType(typ string) *OpenApiType {
-	var result *OpenApiType
-	nullable := false
-
 	if isPointer := strings.HasPrefix(typ, "*"); isPointer {
 		typ = typ[1:]
-		nullable = true
-	} else if isArray := strings.HasPrefix(typ, "[]"); isArray {
-		elemType := toOpenApiType(typ[2:])
+		result := toOpenApiType(typ)
+		result.Nullable = true
+		return result
+	}
+
+	if isArray := strings.HasPrefix(typ, "[]"); isArray {
+		typ = typ[2:]
+		elemType := toOpenApiType(typ)
+		elemType.Nullable = false
 		items := map[string]string{}
 		if elemType.Ref != nil {
 			items["$ref"] = *elemType.Ref
@@ -634,43 +671,42 @@ func toOpenApiType(typ string) *OpenApiType {
 			items["type"] = elemType.Type
 		}
 
-		result = &OpenApiType{
+		return &OpenApiType{
 			Type:     "array",
 			Items:    &items,
 			Nullable: true,
 		}
 	}
 
-	if result == nil {
-		switch typ {
-		case "string":
-			result = &OpenApiType{Type: "string", Nullable: nullable}
-		case "time.Time":
-			format := "date-time"
-			result = &OpenApiType{Type: "string", Format: &format, Nullable: nullable}
-		case "gorm.io/gorm.DeletedAt":
-			format := "date-time"
-			result = &OpenApiType{Type: "string", Format: &format, Nullable: true}
-		case "int", "uint":
-			result = &OpenApiType{Type: "integer", Nullable: nullable}
-		case "int64":
-			format := "int64"
-			result = &OpenApiType{Type: "integer", Format: &format, Nullable: nullable}
-		case "float", "float64":
-			format := "float"
-			result = &OpenApiType{Type: "number", Format: &format, Nullable: nullable}
-		case "bool":
-			result = &OpenApiType{Type: "boolean", Nullable: nullable}
-		default:
-			var typeRef *string = nil
-			if !isSimpleType(typ) {
-				typeRefVal := fmt.Sprintf("./%v.gen.yaml#/components/schemas/%v", utils.ToSnakeCase(typ), typ)
-				typeRef = &typeRefVal
-				result = &OpenApiType{Type: typ, Ref: typeRef, Nullable: nullable}
-			} else {
-				// TODO(joeriddles): panic?
-				result = &OpenApiType{Type: typ, Nullable: nullable}
-			}
+	var result *OpenApiType
+	switch typ {
+	case "string":
+		result = &OpenApiType{Type: "string"}
+	case "time.Time":
+		format := "date-time"
+		result = &OpenApiType{Type: "string", Format: &format}
+	case "gorm.io/gorm.DeletedAt":
+		format := "date-time"
+		result = &OpenApiType{Type: "string", Format: &format, Nullable: true}
+	case "int", "uint":
+		result = &OpenApiType{Type: "integer"}
+	case "int64":
+		format := "int64"
+		result = &OpenApiType{Type: "integer", Format: &format}
+	case "float", "float64":
+		format := "float"
+		result = &OpenApiType{Type: "number", Format: &format}
+	case "bool":
+		result = &OpenApiType{Type: "boolean"}
+	default:
+		var typeRef *string = nil
+		if !isSimpleType(typ) {
+			typeRefVal := fmt.Sprintf("./%v.gen.yaml#/components/schemas/%v", utils.ToSnakeCase(typ), typ)
+			typeRef = &typeRefVal
+			result = &OpenApiType{Type: typ, Ref: typeRef}
+		} else {
+			// TODO(joeriddles): panic?
+			result = &OpenApiType{Type: typ}
 		}
 	}
 
@@ -771,49 +807,63 @@ func convertField(
 			// TODO(joeriddles): add field to GormModelField for references to user-defined models?
 			if isComplexType(dstField.Type) && !strings.Contains(dstField.Type, ".") {
 				isSrcPtr := strings.Contains(field.Type, "*")
-				dstElemType, isDstPtr := strings.CutPrefix(dstField.Type, "*")
+				mapperName, isDstPtr := strings.CutPrefix(dstField.Type, "*")
+				if dst.IsApi {
+					mapperName = mapperName + "Api"
+				}
 
-				// TODO(joeriddles): this is super hacky, change it
-				if to == "model" {
-					if isDstPtr {
-						if !isSrcPtr {
-							from = "&" + from
-						}
-						return fmt.Sprintf(`%v.%v = New%vMapper().MapToModelPtr(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
-					} else {
-						return fmt.Sprintf(`%v.%v = New%vMapper().MapToModel(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
+				if isDstPtr {
+					if !isSrcPtr {
+						from = "&" + from
 					}
+					return fmt.Sprintf(`%v.%v = New%vMapper().MapPtr(%v.%v)`, to, dstField.Name, mapperName, from, field.Name)
 				} else {
-					if isDstPtr {
-						if !isSrcPtr {
-							from = "&" + from
-						}
-						return fmt.Sprintf(`%v.%v = New%vMapper().MapToApiPtr(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
-					} else {
-						return fmt.Sprintf(`%v.%v = New%vMapper().MapToApi(%v.%v)`, to, dstField.Name, dstElemType, from, field.Name)
-					}
+					return fmt.Sprintf(`%v.%v = New%vMapper().Map(%v.%v)`, to, dstField.Name, mapperName, from, field.Name)
 				}
 			}
 		}
 	case *types.Slice:
 		if _, ok := dstType.(*types.Slice); ok {
-			isDstPtr := strings.Contains(dstField.Type, "*")
+			isDstPtr := strings.HasPrefix(dstField.Type, "*")
+			var isDstElemPtr bool
+			if isDstPtr {
+				isDstElemPtr = dstField.Type[3:4] == "*"
+			} else {
+				isDstElemPtr = dstField.Type[2:3] == "*"
+			}
 
-			dstElemType := strings.ReplaceAll(dstField.Type, "*", "")
-			dstElemType = strings.ReplaceAll(dstElemType, "[]", "")
+			isSrcPtr := strings.HasPrefix(field.Type, "*")
+			var isSrcElemPtr bool
+			if isSrcPtr {
+				isSrcElemPtr = field.Type[3:4] == "*"
+			} else {
+				isSrcElemPtr = field.Type[2:3] == "*"
+			}
 
-			// TODO(joeriddles): this is super hacky, change it
-			if to == "model" {
-				if isDstPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToModelsPtr(*%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+			mapperName := strings.ReplaceAll(strings.ReplaceAll(dstField.Type, "*", ""), "[]", "")
+			if dst.IsApi {
+				mapperName = mapperName + "Api"
+			}
+
+			if dst.IsApi {
+				if isSrcPtr && isSrcElemPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
+				} else if isSrcPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
+				} else if isSrcElemPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
 				} else {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToModels(*%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
 				}
 			} else {
-				if isDstPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToApisPtr(%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+				if isDstPtr && isDstElemPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
+				} else if isDstPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
+				} else if isDstElemPtr {
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
 				} else {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapToApis(%v.%v) }`, from, field.Name, to, dstField.Name, dstElemType, from, field.Name)
+					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
 				}
 			}
 		}
