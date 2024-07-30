@@ -595,6 +595,19 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		}
 	}
 
+	for name, path := range g.cfg.UserTemplates {
+		utpl := t.New(name)
+		bytes, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("error loading user-provided template %q: %w", name, err)
+		}
+		txt := string(bytes)
+		_, err = utpl.Parse(txt)
+		if err != nil {
+			return fmt.Errorf("error parsing user-provided template %q: %w", name, err)
+		}
+	}
+
 	return nil
 }
 

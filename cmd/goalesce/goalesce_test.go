@@ -1,9 +1,11 @@
 package main
 
 import (
+	"os"
 	"testing"
 
 	"github.com/joeriddles/goalesce/pkg/config"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -31,6 +33,19 @@ func Test_Custom(t *testing.T) {
 	require.NoError(t, cfg.Validate())
 	err = run(cfg)
 	require.NoError(t, err)
+}
+
+func Test_CustomController(t *testing.T) {
+	cfg, err := config.FromYamlFile("../../examples/custom_controller/config.yaml")
+	require.NoError(t, err)
+	require.NoError(t, cfg.Validate())
+	err = run(cfg)
+	require.NoError(t, err)
+
+	bytes, err := os.ReadFile("../../examples/custom_controller/generated/api/user_controller.gen.go")
+	require.NoError(t, err)
+	code := string(bytes)
+	assert.Contains(t, code, "fmt.Println(\"THIS IS SO CUSTOM!\")")
 }
 
 func Test_Circular(t *testing.T) {

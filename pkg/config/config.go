@@ -33,6 +33,8 @@ type Config struct {
 	ExcludeModels []string `yaml:"exclude_models,omitempty"`
 	// If true, generates a sample main.go file for running the server
 	GenerateMain bool `yaml:"generate_main"`
+	// Override built-in templates from user-provided files
+	UserTemplates map[string]string `yaml:"user_templates,omitempty"`
 
 	// Generated Repository configuration
 	RepositoryConfiguration *RepositoryConfiguration `yaml:"repository,omitempty"`
@@ -89,6 +91,12 @@ func FromYamlFile(fp string) (*Config, error) {
 		if cfg.RepositoryConfiguration.Template != nil && isRelativeFilepath(*cfg.RepositoryConfiguration.Template) {
 			templateFp := filepath.Join(configDir, *cfg.RepositoryConfiguration.Template)
 			cfg.RepositoryConfiguration.Template = &templateFp
+		}
+	}
+
+	if cfg.UserTemplates != nil {
+		for key, path := range cfg.UserTemplates {
+			cfg.UserTemplates[key] = filepath.Join(configDir, path)
 		}
 	}
 
