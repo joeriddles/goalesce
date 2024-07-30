@@ -66,3 +66,27 @@ $ go run .
 # Run Goalesce gen
 $ goalesce -config config.yaml
 ```
+
+## Releasing
+
+To release a new change, simply run `rev-tag.sh` with the desired [semver](https://semver.org/) update: major, minor, or patch:
+
+```shell
+$ ./rev-tag.sh patch
+./rev-tag.sh patch
+Old tag: v1.0.1
+New tag: v1.0.2
+Created new tag v1.0.2
+Do you want to push this tag? y
+Enumerating objects: 4, done.
+Counting objects: 100% (4/4), done.
+Delta compression using up to 8 threads
+Compressing objects: 100% (3/3), done.
+Writing objects: 100% (3/3), 769 bytes | 769.00 KiB/s, done.
+Total 3 (delta 1), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+To https://github.com/joeriddles/goalesce.git
+ * [new tag]         v1.0.2 -> v1.0.2
+```
+
+The shell script will create a new tag and push it to GitHub, which the [release](https://github.com/joeriddles/goalesce/blob/main/.github/workflows/release.yaml) workflow will detect and create a new release for.

@@ -2,7 +2,10 @@
 set -eu
 
 REV="${1:-}"
-LATEST_TAG=$(git tag | sort --reverse | head -n 1)
+# Use latest tag from remote
+LATEST_TAG=$(git ls-remote --tags origin | grep -o -e 'v\d\+\.\d\+\.\d\+' | sort --reverse | head -n 1)
+
+# LATEST_TAG=$(git tag | sort --reverse | head -n 1)
 echo "Old tag: $LATEST_TAG"
 
 PY_PREFIX='import sys;
@@ -24,7 +27,26 @@ fi
 NEW_TAG=$(python3 -c "$PY_PREFIX $REV += 1; $PY_POSTFIX" $LATEST_TAG)
 echo "New tag: ${NEW_TAG}"
 
-git tag "${NEW_TAG}"
+tag() {
+  git tag "${NEW_TAG}" && echo Created new tag "${NEW_TAG}"
+}
+
+force_tag() {
+  git tag -f "${NEW_TAG}" && echo Created new tag "${NEW_TAG}"
+}
+
+check_force_tag() {
+  while true; do
+    read -p "This tag already exists. Do you want override it? " yn
+    case $yn in
+        [Yy]* ) force_tag; break;;
+        [Nn]* ) exit;;
+        * ) echo "Please answer y or n.";;
+    esac
+  done
+}
+
+tag || check_force_tag
 
 while true; do
     read -p "Do you want to push this tag? " yn
