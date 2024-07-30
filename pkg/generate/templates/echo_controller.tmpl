@@ -22,12 +22,14 @@ type {{.model.Name}}Controller interface {
 type {{.model.Name|ToCamelCase}}Controller struct {
   repository repository.{{.model.Name}}Repository
   mapper {{.model.Name}}Mapper
+  apiMapper {{.model.Name}}ApiMapper
 }
 
 func New{{.model.Name}}Controller() {{.model.Name}}Controller {
   return &{{.model.Name|ToCamelCase}}Controller{
     repository: repository.New{{.model.Name}}Repository(),
     mapper: New{{.model.Name}}Mapper(),
+    apiMapper: New{{.model.Name}}ApiMapper(),
   }
 }
 
@@ -56,7 +58,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Con
 	if err != nil {
 		return nil, err
 	}
-	apiModel := c.mapper.MapToApi(*createdModel)
+	apiModel := c.apiMapper.Map(*createdModel)
   return {{Types}}Post{{.model.Name}}201JSONResponse(apiModel), nil
 }
 
@@ -72,7 +74,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx echo.Co
   if err != nil {
     return nil, err
   }
-  apiModel := c.mapper.MapToApi(*model)
+  apiModel := c.apiMapper.Map(*model)
   return {{Types}}Get{{.model.Name}}ID200JSONResponse(apiModel), err
 }
 
