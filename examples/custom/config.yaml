@@ -2,5 +2,6 @@ input_folder_path: ./model
 output_file_path: ./generated
 module_name: github.com/joeriddles/goalesce/examples/custom
 models_package: github.com/joeriddles/goalesce/examples/custom/model
+query_package: github.com/joeriddles/goalesce/examples/custom/query
 allow_custom_models: true
 clear_output_dir: true
