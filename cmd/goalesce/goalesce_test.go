@@ -65,7 +65,7 @@ func Test_GenerateExclude(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func Test_GenerateNestedTypes_Yaml(t *testing.T) {
+func Test_GenerateNestedTypes(t *testing.T) {
 	cfg, err := config.FromYamlFile("../../examples/types/config.yaml")
 	require.NoError(t, err)
 	require.NoError(t, cfg.Validate())

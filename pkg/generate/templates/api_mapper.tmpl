@@ -26,7 +26,7 @@ func New{{.Name}}Mapper() {{.Name}}Mapper {
 
 func (m *{{.Name|ToCamelCase}}Mapper) Map(model model.{{.dst.Name}}) {{Types}}{{.dst.Name}} {
   obj := &{{Types}}{{.dst.Name}}{}
-  {{range .src.Fields}}
+  {{range .src.AllFields}}
   {{.|ConvertToApi}}
   {{end}}
 	return *obj

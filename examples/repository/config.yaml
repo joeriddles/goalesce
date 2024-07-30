@@ -2,6 +2,7 @@ input_folder_path: ./model
 output_file_path: ./generated
 module_name: github.com/joeriddles/goalesce/examples/repository
 models_package: github.com/joeriddles/goalesce/examples/repository/model
+query_package: github.com/joeriddles/goalesce/examples/repository/quert
 clear_output_dir: true
 
 repository:

@@ -1,7 +1,8 @@
-input_folder_path: "./"
-output_file_path: "./generated"
-module_name: "github.com/joeriddles/goalesce/examples/types"
-models_package: "github.com/joeriddles/goalesce/examples/types"
+input_folder_path: ./model
+output_file_path: ./generated
+module_name: github.com/joeriddles/goalesce/examples/types
+models_package: github.com/joeriddles/goalesce/examples/types
+query_package: github.com/joeriddles/goalesce/examples/query
 clear_output_dir: true
 
 server_codegen:

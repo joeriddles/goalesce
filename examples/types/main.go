@@ -1,10 +1,15 @@
-package types
+package main
 
 import (
-	"gorm.io/gorm"
+	"github.com/joeriddles/goalesce/examples/types/model"
+	"gorm.io/gen"
 )
 
-type User struct {
-	gorm.Model
-	Name string `gorm:"column:name;"`
+func main() {
+	g := gen.NewGenerator(gen.Config{
+		OutPath: "query",
+		Mode:    gen.WithoutContext | gen.WithQueryInterface,
+	})
+	g.ApplyBasic(model.User{})
+	g.Execute()
 }
