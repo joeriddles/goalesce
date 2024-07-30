@@ -41,7 +41,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx echo.Cont
 
   result := []{{Types}}{{.model.Name}}{}
   for _, {{.model.Name|ToCamelCase}} := range {{.model.Name|ToCamelCase}}s {
-    api{{.model.Name}} := c.mapper.MapToApi(*{{.model.Name|ToCamelCase}})
+    api{{.model.Name}} := c.apiMapper.Map(*{{.model.Name|ToCamelCase}})
     result = append(result, api{{.model.Name}})
   }
 
