@@ -8,11 +8,11 @@ import (
 type Manufacturer struct {
 	gorm.Model
 	Name     string
-	Vehicles []Model
+	Vehicles []VehicleModel
 }
 
 // A vehicle model, like a Chevrolet Silverado
-type Model struct {
+type VehicleModel struct {
 	gorm.Model
 	Name           string
 	ManufacturerID uint
@@ -21,11 +21,11 @@ type Model struct {
 }
 
 // An individual of a model, like Joe's Chevrolet Silverado
-type VehicleModel struct {
+type Vehicle struct {
 	gorm.Model
 	Vin            string
 	VehicleModelID uint
-	VehicleModel   Model
+	VehicleModel   VehicleModel
 	PersonID       *int
 	Person         *Person
 }
@@ -35,7 +35,7 @@ type Part struct {
 	gorm.Model
 	Name   string
 	Cost   int
-	Models []*Model `gorm:"many2many:model_parts;"`
+	Models []*VehicleModel `gorm:"many2many:model_parts;"`
 }
 
 // A person, who may drive a vehicle
