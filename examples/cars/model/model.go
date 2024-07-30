@@ -27,7 +27,7 @@ type Vehicle struct {
 	VehicleModelID uint
 	VehicleModel   VehicleModel
 	PersonID       *int
-	Person         Person
+	Person         *Person
 }
 
 // A vehicle part for one or more models, like a muffler for all Chevrolet pickups

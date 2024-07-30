@@ -30,10 +30,18 @@ func Test_PostVehicle(t *testing.T) {
 	repo := repository.NewVehicleRepository(query)
 	controller := api.NewVehicleController(query)
 
+	personRepo := repository.NewPersonRepository(query)
+	person, err := personRepo.Create(context.Background(), model.Person{
+		Name: "Jim",
+	})
+	require.NoError(t, err)
+	personID := int(person.ID)
+
 	// Act
 	response, err := controller.PostVehicle(context.Background(), api.PostVehicleRequestObject{
 		Body: &api.CreateVehicle{
-			Vin: "123",
+			Vin:      "123",
+			PersonID: &personID,
 		},
 	})
 	require.NoError(t, err)
@@ -44,15 +52,18 @@ func Test_PostVehicle(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 201, rec.Code)
 
-	vehicle := &model.Vehicle{}
+	vehicle := &api.Vehicle{}
 	err = json.Unmarshal(rec.Body.Bytes(), vehicle)
 	require.NoError(t, err)
 	assert.Equal(t, "123", vehicle.Vin)
-	require.NotEqual(t, uint(0), vehicle.ID)
+	assert.NotEqual(t, uint(0), vehicle.ID)
+	assert.Equal(t, personID, *vehicle.PersonID)
 
 	vehicleFromDb, err := repo.Get(context.Background(), int64(vehicle.ID))
 	require.NoError(t, err)
-	assert.Equal(t, vehicle.Vin, vehicleFromDb.Vin)
+	assert.Equal(t, "123", vehicleFromDb.Vin)
+	assert.NotEqual(t, uint(0), vehicleFromDb.ID)
+	assert.Equal(t, personID, *vehicleFromDb.PersonID)
 }
 
 func Test_GetVehicle(t *testing.T) {
@@ -74,7 +85,7 @@ func Test_GetVehicle(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 200, rec.Code)
 
-	vehicles := &[]model.Vehicle{}
+	vehicles := &[]api.Vehicle{}
 	err = json.Unmarshal(rec.Body.Bytes(), vehicles)
 	require.NoError(t, err)
 	assert.Equal(t, 1, len(*vehicles))
@@ -105,7 +116,7 @@ func Test_GetVehicleID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 200, rec.Code)
 
-	actual := &model.Vehicle{}
+	actual := &api.Vehicle{}
 	err = json.Unmarshal(rec.Body.Bytes(), actual)
 	require.NoError(t, err)
 	assert.Equal(t, vehicle.Vin, actual.Vin)

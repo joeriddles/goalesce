@@ -121,16 +121,16 @@ components:
     Create{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{if .|ShouldCreateField}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}
           items:
             {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
           {{end}}{{end}}
-        {{end}}
+        {{end}}{{end}}
       required:
-        {{range .Fields}}- {{.Name|ToSnakeCase}}
+        {{range .Fields}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
         {{end}}
     Update{{.Name}}:
       type: object

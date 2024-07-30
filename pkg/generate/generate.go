@@ -535,20 +535,21 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 	}
 
 	funcMap := template.FuncMap{
-		"ToLower":        strings.ToLower,
-		"ToCamelCase":    utils.ToCamelCase,
-		"ToSnakeCase":    utils.ToSnakeCase,
-		"ToHtmlCase":     utils.ToHtmlCase,
-		"ToPascalCase":   utils.ToPascalCase,
-		"ToOpenApiType":  toOpenApiType,
-		"MapToModelType": mapToModelType,
-		"MapToApiType":   mapToApiType,
-		"IsSimpleType":   isSimpleType,
-		"IsComplexType":  isComplexType,
-		"IsNullable":     isNullable,
-		"Not":            not,
-		"Types":          getTypesNamespace,
-		"WrapID":         wrapID,
+		"ToLower":           strings.ToLower,
+		"ToCamelCase":       utils.ToCamelCase,
+		"ToSnakeCase":       utils.ToSnakeCase,
+		"ToHtmlCase":        utils.ToHtmlCase,
+		"ToPascalCase":      utils.ToPascalCase,
+		"ToOpenApiType":     toOpenApiType,
+		"MapToModelType":    mapToModelType,
+		"MapToApiType":      mapToApiType,
+		"IsSimpleType":      isSimpleType,
+		"IsComplexType":     isComplexType,
+		"IsNullable":        isNullable,
+		"Not":               not,
+		"Types":             getTypesNamespace,
+		"WrapID":            wrapID,
+		"ShouldCreateField": shouldCreateField,
 		// will be replaced per model
 		"ConvertToModel":           func() string { return "" },
 		"ConvertToApi":             func() string { return "" },
@@ -903,6 +904,24 @@ func not(v bool) bool {
 func isNullable(t string) bool {
 	openApiType := toOpenApiType(t)
 	return openApiType.Nullable
+}
+
+func shouldCreateField(f entity.GormModelField) bool {
+	switch t := f.GetType().(type) {
+	case *types.Basic:
+		return true
+	case *types.Pointer:
+		switch t.Elem().(type) {
+		case *types.Basic:
+			return true
+		default:
+			return false
+		}
+	case *types.Array, *types.Slice, *types.Map, *types.Chan, *types.Struct, *types.Tuple, *types.Signature, *types.Named, *types.Interface:
+		return false
+	default:
+		panic(fmt.Sprintf("impossible: %T", t))
+	}
 }
 
 func createDirs(paths ...string) error {
