@@ -13,7 +13,7 @@ func main() {
 	g.ApplyBasic(
 		model.Manufacturer{},
 		model.Vehicle{},
-		model.Vehicle{},
+		model.VehicleModel{},
 		model.Part{},
 		model.Person{},
 	)

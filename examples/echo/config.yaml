@@ -8,7 +8,7 @@ prune_yaml: true
 
 server_codegen:
   package: api
-  output: ./generated/server_gen.go
+  output: ./generated/api/server_gen.go
   generate:
     echo-server: true
     strict-server: true

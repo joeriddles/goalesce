@@ -25,9 +25,9 @@ type {{.model.Name|ToCamelCase}}Controller struct {
   apiMapper {{.model.Name}}ApiMapper
 }
 
-func New{{.model.Name}}Controller() {{.model.Name}}Controller {
+func New{{.model.Name}}Controller(query *query.Query) {{.model.Name}}Controller {
   return &{{.model.Name|ToCamelCase}}Controller{
-    repository: repository.New{{.model.Name}}Repository(),
+    repository: repository.New{{.model.Name}}Repository(query),
     mapper: New{{.model.Name}}Mapper(),
     apiMapper: New{{.model.Name}}ApiMapper(),
   }

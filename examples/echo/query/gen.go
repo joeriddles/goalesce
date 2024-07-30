@@ -22,6 +22,7 @@ func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 		Part:         newPart(db, opts...),
 		Person:       newPerson(db, opts...),
 		Vehicle:      newVehicle(db, opts...),
+		VehicleModel: newVehicleModel(db, opts...),
 	}
 }
 
@@ -32,6 +33,7 @@ type Query struct {
 	Part         part
 	Person       person
 	Vehicle      vehicle
+	VehicleModel vehicleModel
 }
 
 func (q *Query) Available() bool { return q.db != nil }
@@ -43,6 +45,7 @@ func (q *Query) clone(db *gorm.DB) *Query {
 		Part:         q.Part.clone(db),
 		Person:       q.Person.clone(db),
 		Vehicle:      q.Vehicle.clone(db),
+		VehicleModel: q.VehicleModel.clone(db),
 	}
 }
 
@@ -61,6 +64,7 @@ func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 		Part:         q.Part.replaceDB(db),
 		Person:       q.Person.replaceDB(db),
 		Vehicle:      q.Vehicle.replaceDB(db),
+		VehicleModel: q.VehicleModel.replaceDB(db),
 	}
 }
 
@@ -69,6 +73,7 @@ type queryCtx struct {
 	Part         IPartDo
 	Person       IPersonDo
 	Vehicle      IVehicleDo
+	VehicleModel IVehicleModelDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
@@ -77,6 +82,7 @@ func (q *Query) WithContext(ctx context.Context) *queryCtx {
 		Part:         q.Part.WithContext(ctx),
 		Person:       q.Person.WithContext(ctx),
 		Vehicle:      q.Vehicle.WithContext(ctx),
+		VehicleModel: q.VehicleModel.WithContext(ctx),
 	}
 }
 

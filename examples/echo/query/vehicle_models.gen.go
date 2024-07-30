@@ -23,7 +23,7 @@ func newVehicleModel(db *gorm.DB, opts ...gen.DOOption) vehicleModel {
 	_vehicleModel := vehicleModel{}
 
 	_vehicleModel.vehicleModelDo.UseDB(db, opts...)
-	_vehicleModel.vehicleModelDo.UseModel(&model.Vehicle{})
+	_vehicleModel.vehicleModelDo.UseModel(&model.VehicleModel{})
 
 	tableName := _vehicleModel.vehicleModelDo.TableName()
 	_vehicleModel.ALL = field.NewAsterisk(tableName)
@@ -31,45 +31,50 @@ func newVehicleModel(db *gorm.DB, opts ...gen.DOOption) vehicleModel {
 	_vehicleModel.CreatedAt = field.NewTime(tableName, "created_at")
 	_vehicleModel.UpdatedAt = field.NewTime(tableName, "updated_at")
 	_vehicleModel.DeletedAt = field.NewField(tableName, "deleted_at")
-	_vehicleModel.Vin = field.NewString(tableName, "vin")
-	_vehicleModel.VehicleModelID = field.NewUint(tableName, "vehicle_model_id")
-	_vehicleModel.PersonID = field.NewInt(tableName, "person_id")
-	_vehicleModel.VehicleModel = vehicleModelBelongsToVehicleModel{
+	_vehicleModel.Name = field.NewString(tableName, "name")
+	_vehicleModel.ManufacturerID = field.NewUint(tableName, "manufacturer_id")
+	_vehicleModel.Manufacturer = vehicleModelBelongsToManufacturer{
 		db: db.Session(&gorm.Session{}),
 
-		RelationField: field.NewRelation("VehicleModel", "model.Model"),
-		Manufacturer: struct {
+		RelationField: field.NewRelation("Manufacturer", "model.Manufacturer"),
+		Vehicles: struct {
 			field.RelationField
-			Vehicles struct {
+			Manufacturer struct {
 				field.RelationField
 			}
+			Parts struct {
+				field.RelationField
+				Models struct {
+					field.RelationField
+				}
+			}
 		}{
-			RelationField: field.NewRelation("VehicleModel.Manufacturer", "model.Manufacturer"),
-			Vehicles: struct {
+			RelationField: field.NewRelation("Manufacturer.Vehicles", "model.VehicleModel"),
+			Manufacturer: struct {
 				field.RelationField
 			}{
-				RelationField: field.NewRelation("VehicleModel.Manufacturer.Vehicles", "model.Model"),
+				RelationField: field.NewRelation("Manufacturer.Vehicles.Manufacturer", "model.Manufacturer"),
 			},
-		},
-		Parts: struct {
-			field.RelationField
-			Models struct {
+			Parts: struct {
 				field.RelationField
-			}
-		}{
-			RelationField: field.NewRelation("VehicleModel.Parts", "model.Part"),
-			Models: struct {
-				field.RelationField
+				Models struct {
+					field.RelationField
+				}
 			}{
-				RelationField: field.NewRelation("VehicleModel.Parts.Models", "model.Model"),
+				RelationField: field.NewRelation("Manufacturer.Vehicles.Parts", "model.Part"),
+				Models: struct {
+					field.RelationField
+				}{
+					RelationField: field.NewRelation("Manufacturer.Vehicles.Parts.Models", "model.VehicleModel"),
+				},
 			},
 		},
 	}
 
-	_vehicleModel.Person = vehicleModelBelongsToPerson{
+	_vehicleModel.Parts = vehicleModelManyToManyParts{
 		db: db.Session(&gorm.Session{}),
 
-		RelationField: field.NewRelation("Person", "model.Person"),
+		RelationField: field.NewRelation("Parts", "model.Part"),
 	}
 
 	_vehicleModel.fillFieldMap()
@@ -85,12 +90,11 @@ type vehicleModel struct {
 	CreatedAt      field.Time
 	UpdatedAt      field.Time
 	DeletedAt      field.Field
-	Vin            field.String
-	VehicleModelID field.Uint
-	PersonID       field.Int
-	VehicleModel   vehicleModelBelongsToVehicleModel
+	Name           field.String
+	ManufacturerID field.Uint
+	Manufacturer   vehicleModelBelongsToManufacturer
 
-	Person vehicleModelBelongsToPerson
+	Parts vehicleModelManyToManyParts
 
 	fieldMap map[string]field.Expr
 }
@@ -111,9 +115,8 @@ func (v *vehicleModel) updateTableName(table string) *vehicleModel {
 	v.CreatedAt = field.NewTime(table, "created_at")
 	v.UpdatedAt = field.NewTime(table, "updated_at")
 	v.DeletedAt = field.NewField(table, "deleted_at")
-	v.Vin = field.NewString(table, "vin")
-	v.VehicleModelID = field.NewUint(table, "vehicle_model_id")
-	v.PersonID = field.NewInt(table, "person_id")
+	v.Name = field.NewString(table, "name")
+	v.ManufacturerID = field.NewUint(table, "manufacturer_id")
 
 	v.fillFieldMap()
 
@@ -130,14 +133,13 @@ func (v *vehicleModel) GetFieldByName(fieldName string) (field.OrderExpr, bool) 
 }
 
 func (v *vehicleModel) fillFieldMap() {
-	v.fieldMap = make(map[string]field.Expr, 9)
+	v.fieldMap = make(map[string]field.Expr, 8)
 	v.fieldMap["id"] = v.ID
 	v.fieldMap["created_at"] = v.CreatedAt
 	v.fieldMap["updated_at"] = v.UpdatedAt
 	v.fieldMap["deleted_at"] = v.DeletedAt
-	v.fieldMap["vin"] = v.Vin
-	v.fieldMap["vehicle_model_id"] = v.VehicleModelID
-	v.fieldMap["person_id"] = v.PersonID
+	v.fieldMap["name"] = v.Name
+	v.fieldMap["manufacturer_id"] = v.ManufacturerID
 
 }
 
@@ -151,26 +153,26 @@ func (v vehicleModel) replaceDB(db *gorm.DB) vehicleModel {
 	return v
 }
 
-type vehicleModelBelongsToVehicleModel struct {
+type vehicleModelBelongsToManufacturer struct {
 	db *gorm.DB
 
 	field.RelationField
 
-	Manufacturer struct {
+	Vehicles struct {
 		field.RelationField
-		Vehicles struct {
+		Manufacturer struct {
 			field.RelationField
 		}
-	}
-	Parts struct {
-		field.RelationField
-		Models struct {
+		Parts struct {
 			field.RelationField
+			Models struct {
+				field.RelationField
+			}
 		}
 	}
 }
 
-func (a vehicleModelBelongsToVehicleModel) Where(conds ...field.Expr) *vehicleModelBelongsToVehicleModel {
+func (a vehicleModelBelongsToManufacturer) Where(conds ...field.Expr) *vehicleModelBelongsToManufacturer {
 	if len(conds) == 0 {
 		return &a
 	}
@@ -183,27 +185,27 @@ func (a vehicleModelBelongsToVehicleModel) Where(conds ...field.Expr) *vehicleMo
 	return &a
 }
 
-func (a vehicleModelBelongsToVehicleModel) WithContext(ctx context.Context) *vehicleModelBelongsToVehicleModel {
+func (a vehicleModelBelongsToManufacturer) WithContext(ctx context.Context) *vehicleModelBelongsToManufacturer {
 	a.db = a.db.WithContext(ctx)
 	return &a
 }
 
-func (a vehicleModelBelongsToVehicleModel) Session(session *gorm.Session) *vehicleModelBelongsToVehicleModel {
+func (a vehicleModelBelongsToManufacturer) Session(session *gorm.Session) *vehicleModelBelongsToManufacturer {
 	a.db = a.db.Session(session)
 	return &a
 }
 
-func (a vehicleModelBelongsToVehicleModel) Model(m *model.Vehicle) *vehicleModelBelongsToVehicleModelTx {
-	return &vehicleModelBelongsToVehicleModelTx{a.db.Model(m).Association(a.Name())}
+func (a vehicleModelBelongsToManufacturer) Model(m *model.VehicleModel) *vehicleModelBelongsToManufacturerTx {
+	return &vehicleModelBelongsToManufacturerTx{a.db.Model(m).Association(a.Name())}
 }
 
-type vehicleModelBelongsToVehicleModelTx struct{ tx *gorm.Association }
+type vehicleModelBelongsToManufacturerTx struct{ tx *gorm.Association }
 
-func (a vehicleModelBelongsToVehicleModelTx) Find() (result *model.VehicleModel, err error) {
+func (a vehicleModelBelongsToManufacturerTx) Find() (result *model.Manufacturer, err error) {
 	return result, a.tx.Find(&result)
 }
 
-func (a vehicleModelBelongsToVehicleModelTx) Append(values ...*model.VehicleModel) (err error) {
+func (a vehicleModelBelongsToManufacturerTx) Append(values ...*model.Manufacturer) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -211,7 +213,7 @@ func (a vehicleModelBelongsToVehicleModelTx) Append(values ...*model.VehicleMode
 	return a.tx.Append(targetValues...)
 }
 
-func (a vehicleModelBelongsToVehicleModelTx) Replace(values ...*model.VehicleModel) (err error) {
+func (a vehicleModelBelongsToManufacturerTx) Replace(values ...*model.Manufacturer) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -219,7 +221,7 @@ func (a vehicleModelBelongsToVehicleModelTx) Replace(values ...*model.VehicleMod
 	return a.tx.Replace(targetValues...)
 }
 
-func (a vehicleModelBelongsToVehicleModelTx) Delete(values ...*model.VehicleModel) (err error) {
+func (a vehicleModelBelongsToManufacturerTx) Delete(values ...*model.Manufacturer) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -227,21 +229,21 @@ func (a vehicleModelBelongsToVehicleModelTx) Delete(values ...*model.VehicleMode
 	return a.tx.Delete(targetValues...)
 }
 
-func (a vehicleModelBelongsToVehicleModelTx) Clear() error {
+func (a vehicleModelBelongsToManufacturerTx) Clear() error {
 	return a.tx.Clear()
 }
 
-func (a vehicleModelBelongsToVehicleModelTx) Count() int64 {
+func (a vehicleModelBelongsToManufacturerTx) Count() int64 {
 	return a.tx.Count()
 }
 
-type vehicleModelBelongsToPerson struct {
+type vehicleModelManyToManyParts struct {
 	db *gorm.DB
 
 	field.RelationField
 }
 
-func (a vehicleModelBelongsToPerson) Where(conds ...field.Expr) *vehicleModelBelongsToPerson {
+func (a vehicleModelManyToManyParts) Where(conds ...field.Expr) *vehicleModelManyToManyParts {
 	if len(conds) == 0 {
 		return &a
 	}
@@ -254,27 +256,27 @@ func (a vehicleModelBelongsToPerson) Where(conds ...field.Expr) *vehicleModelBel
 	return &a
 }
 
-func (a vehicleModelBelongsToPerson) WithContext(ctx context.Context) *vehicleModelBelongsToPerson {
+func (a vehicleModelManyToManyParts) WithContext(ctx context.Context) *vehicleModelManyToManyParts {
 	a.db = a.db.WithContext(ctx)
 	return &a
 }
 
-func (a vehicleModelBelongsToPerson) Session(session *gorm.Session) *vehicleModelBelongsToPerson {
+func (a vehicleModelManyToManyParts) Session(session *gorm.Session) *vehicleModelManyToManyParts {
 	a.db = a.db.Session(session)
 	return &a
 }
 
-func (a vehicleModelBelongsToPerson) Model(m *model.Vehicle) *vehicleModelBelongsToPersonTx {
-	return &vehicleModelBelongsToPersonTx{a.db.Model(m).Association(a.Name())}
+func (a vehicleModelManyToManyParts) Model(m *model.VehicleModel) *vehicleModelManyToManyPartsTx {
+	return &vehicleModelManyToManyPartsTx{a.db.Model(m).Association(a.Name())}
 }
 
-type vehicleModelBelongsToPersonTx struct{ tx *gorm.Association }
+type vehicleModelManyToManyPartsTx struct{ tx *gorm.Association }
 
-func (a vehicleModelBelongsToPersonTx) Find() (result *model.Person, err error) {
+func (a vehicleModelManyToManyPartsTx) Find() (result []*model.Part, err error) {
 	return result, a.tx.Find(&result)
 }
 
-func (a vehicleModelBelongsToPersonTx) Append(values ...*model.Person) (err error) {
+func (a vehicleModelManyToManyPartsTx) Append(values ...*model.Part) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -282,7 +284,7 @@ func (a vehicleModelBelongsToPersonTx) Append(values ...*model.Person) (err erro
 	return a.tx.Append(targetValues...)
 }
 
-func (a vehicleModelBelongsToPersonTx) Replace(values ...*model.Person) (err error) {
+func (a vehicleModelManyToManyPartsTx) Replace(values ...*model.Part) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -290,7 +292,7 @@ func (a vehicleModelBelongsToPersonTx) Replace(values ...*model.Person) (err err
 	return a.tx.Replace(targetValues...)
 }
 
-func (a vehicleModelBelongsToPersonTx) Delete(values ...*model.Person) (err error) {
+func (a vehicleModelManyToManyPartsTx) Delete(values ...*model.Part) (err error) {
 	targetValues := make([]interface{}, len(values))
 	for i, v := range values {
 		targetValues[i] = v
@@ -298,11 +300,11 @@ func (a vehicleModelBelongsToPersonTx) Delete(values ...*model.Person) (err erro
 	return a.tx.Delete(targetValues...)
 }
 
-func (a vehicleModelBelongsToPersonTx) Clear() error {
+func (a vehicleModelManyToManyPartsTx) Clear() error {
 	return a.tx.Clear()
 }
 
-func (a vehicleModelBelongsToPersonTx) Count() int64 {
+func (a vehicleModelManyToManyPartsTx) Count() int64 {
 	return a.tx.Count()
 }
 
@@ -337,17 +339,17 @@ type IVehicleModelDo interface {
 	Count() (count int64, err error)
 	Scopes(funcs ...func(gen.Dao) gen.Dao) IVehicleModelDo
 	Unscoped() IVehicleModelDo
-	Create(values ...*model.Vehicle) error
-	CreateInBatches(values []*model.Vehicle, batchSize int) error
-	Save(values ...*model.Vehicle) error
-	First() (*model.Vehicle, error)
-	Take() (*model.Vehicle, error)
-	Last() (*model.Vehicle, error)
-	Find() ([]*model.Vehicle, error)
-	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.Vehicle, err error)
-	FindInBatches(result *[]*model.Vehicle, batchSize int, fc func(tx gen.Dao, batch int) error) error
+	Create(values ...*model.VehicleModel) error
+	CreateInBatches(values []*model.VehicleModel, batchSize int) error
+	Save(values ...*model.VehicleModel) error
+	First() (*model.VehicleModel, error)
+	Take() (*model.VehicleModel, error)
+	Last() (*model.VehicleModel, error)
+	Find() ([]*model.VehicleModel, error)
+	FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.VehicleModel, err error)
+	FindInBatches(result *[]*model.VehicleModel, batchSize int, fc func(tx gen.Dao, batch int) error) error
 	Pluck(column field.Expr, dest interface{}) error
-	Delete(...*model.Vehicle) (info gen.ResultInfo, err error)
+	Delete(...*model.VehicleModel) (info gen.ResultInfo, err error)
 	Update(column field.Expr, value interface{}) (info gen.ResultInfo, err error)
 	UpdateSimple(columns ...field.AssignExpr) (info gen.ResultInfo, err error)
 	Updates(value interface{}) (info gen.ResultInfo, err error)
@@ -359,9 +361,9 @@ type IVehicleModelDo interface {
 	Assign(attrs ...field.AssignExpr) IVehicleModelDo
 	Joins(fields ...field.RelationField) IVehicleModelDo
 	Preload(fields ...field.RelationField) IVehicleModelDo
-	FirstOrInit() (*model.Vehicle, error)
-	FirstOrCreate() (*model.Vehicle, error)
-	FindByPage(offset int, limit int) (result []*model.Vehicle, count int64, err error)
+	FirstOrInit() (*model.VehicleModel, error)
+	FirstOrCreate() (*model.VehicleModel, error)
+	FindByPage(offset int, limit int) (result []*model.VehicleModel, count int64, err error)
 	ScanByPage(result interface{}, offset int, limit int) (count int64, err error)
 	Scan(result interface{}) (err error)
 	Returning(value interface{}, columns ...string) IVehicleModelDo
@@ -461,57 +463,57 @@ func (v vehicleModelDo) Unscoped() IVehicleModelDo {
 	return v.withDO(v.DO.Unscoped())
 }
 
-func (v vehicleModelDo) Create(values ...*model.Vehicle) error {
+func (v vehicleModelDo) Create(values ...*model.VehicleModel) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return v.DO.Create(values)
 }
 
-func (v vehicleModelDo) CreateInBatches(values []*model.Vehicle, batchSize int) error {
+func (v vehicleModelDo) CreateInBatches(values []*model.VehicleModel, batchSize int) error {
 	return v.DO.CreateInBatches(values, batchSize)
 }
 
 // Save : !!! underlying implementation is different with GORM
 // The method is equivalent to executing the statement: db.Clauses(clause.OnConflict{UpdateAll: true}).Create(values)
-func (v vehicleModelDo) Save(values ...*model.Vehicle) error {
+func (v vehicleModelDo) Save(values ...*model.VehicleModel) error {
 	if len(values) == 0 {
 		return nil
 	}
 	return v.DO.Save(values)
 }
 
-func (v vehicleModelDo) First() (*model.Vehicle, error) {
+func (v vehicleModelDo) First() (*model.VehicleModel, error) {
 	if result, err := v.DO.First(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.Vehicle), nil
+		return result.(*model.VehicleModel), nil
 	}
 }
 
-func (v vehicleModelDo) Take() (*model.Vehicle, error) {
+func (v vehicleModelDo) Take() (*model.VehicleModel, error) {
 	if result, err := v.DO.Take(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.Vehicle), nil
+		return result.(*model.VehicleModel), nil
 	}
 }
 
-func (v vehicleModelDo) Last() (*model.Vehicle, error) {
+func (v vehicleModelDo) Last() (*model.VehicleModel, error) {
 	if result, err := v.DO.Last(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.Vehicle), nil
+		return result.(*model.VehicleModel), nil
 	}
 }
 
-func (v vehicleModelDo) Find() ([]*model.Vehicle, error) {
+func (v vehicleModelDo) Find() ([]*model.VehicleModel, error) {
 	result, err := v.DO.Find()
-	return result.([]*model.Vehicle), err
+	return result.([]*model.VehicleModel), err
 }
 
-func (v vehicleModelDo) FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.Vehicle, err error) {
-	buf := make([]*model.Vehicle, 0, batchSize)
+func (v vehicleModelDo) FindInBatch(batchSize int, fc func(tx gen.Dao, batch int) error) (results []*model.VehicleModel, err error) {
+	buf := make([]*model.VehicleModel, 0, batchSize)
 	err = v.DO.FindInBatches(&buf, batchSize, func(tx gen.Dao, batch int) error {
 		defer func() { results = append(results, buf...) }()
 		return fc(tx, batch)
@@ -519,7 +521,7 @@ func (v vehicleModelDo) FindInBatch(batchSize int, fc func(tx gen.Dao, batch int
 	return results, err
 }
 
-func (v vehicleModelDo) FindInBatches(result *[]*model.Vehicle, batchSize int, fc func(tx gen.Dao, batch int) error) error {
+func (v vehicleModelDo) FindInBatches(result *[]*model.VehicleModel, batchSize int, fc func(tx gen.Dao, batch int) error) error {
 	return v.DO.FindInBatches(result, batchSize, fc)
 }
 
@@ -545,23 +547,23 @@ func (v vehicleModelDo) Preload(fields ...field.RelationField) IVehicleModelDo {
 	return &v
 }
 
-func (v vehicleModelDo) FirstOrInit() (*model.Vehicle, error) {
+func (v vehicleModelDo) FirstOrInit() (*model.VehicleModel, error) {
 	if result, err := v.DO.FirstOrInit(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.Vehicle), nil
+		return result.(*model.VehicleModel), nil
 	}
 }
 
-func (v vehicleModelDo) FirstOrCreate() (*model.Vehicle, error) {
+func (v vehicleModelDo) FirstOrCreate() (*model.VehicleModel, error) {
 	if result, err := v.DO.FirstOrCreate(); err != nil {
 		return nil, err
 	} else {
-		return result.(*model.Vehicle), nil
+		return result.(*model.VehicleModel), nil
 	}
 }
 
-func (v vehicleModelDo) FindByPage(offset int, limit int) (result []*model.Vehicle, count int64, err error) {
+func (v vehicleModelDo) FindByPage(offset int, limit int) (result []*model.VehicleModel, count int64, err error) {
 	result, err = v.Offset(offset).Limit(limit).Find()
 	if err != nil {
 		return
@@ -590,7 +592,7 @@ func (v vehicleModelDo) Scan(result interface{}) (err error) {
 	return v.DO.Scan(result)
 }
 
-func (v vehicleModelDo) Delete(models ...*model.Vehicle) (result gen.ResultInfo, err error) {
+func (v vehicleModelDo) Delete(models ...*model.VehicleModel) (result gen.ResultInfo, err error) {
 	return v.DO.Delete(models)
 }
 
