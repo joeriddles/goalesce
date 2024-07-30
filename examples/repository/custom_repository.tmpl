@@ -21,13 +21,13 @@ type {{.model.Name}}Repository interface {
   Create(
     ctx context.Context,
     {{.model.Name|ToCamelCase}} model.{{.model.Name}},
-  ) error
+  ) (*model.User, error)
   
   Update(
     ctx context.Context,
     id int64,
     update map[string]interface{},
-  ) error
+  ) (*model.User, error)
   
   Delete(
     ctx context.Context,
@@ -36,10 +36,13 @@ type {{.model.Name}}Repository interface {
 }
 
 type {{.model.Name|ToCamelCase}}Repository struct {
+  query *query.Query
 }
 
-func New{{.model.Name}}Repository() {{.model.Name}}Repository {
-  return &{{.model.Name|ToCamelCase}}Repository{}
+func New{{.model.Name}}Repository(query *query.Query) {{.model.Name}}Repository {
+  return &{{.model.Name|ToCamelCase}}Repository{
+    query: query,
+  }
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) List(
@@ -59,16 +62,16 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Get(
 func (r *{{.model.Name|ToCamelCase}}Repository) Create(
   ctx context.Context,
   {{.model.Name|ToCamelCase}} model.{{.model.Name}},
-) error {
-  return nil
+) (*model.User, error) {
+  return nil, nil
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Update(
   ctx context.Context,
   id int64,
   update map[string]interface{},
-) error {
-  return nil
+) (*model.User, error) {
+  return nil, nil
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Delete(
