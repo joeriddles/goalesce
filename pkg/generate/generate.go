@@ -143,9 +143,13 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		}
 
 		createStr := fmt.Sprintf("Create%v", metadata.Name)
-		createApiMetadata, _ := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
+		createApiMetadata, err := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
 			return m.Name == createStr
 		})
+		if err != nil {
+			g.logger.Printf("could not find createApiMetadata for %v", metadata.Name)
+			continue
+		}
 
 		for _, createApiField := range createApiMetadata.AllFields() {
 			field := metadata.GetField(createApiField.Name)
