@@ -74,13 +74,9 @@ func main() {
 		errExit("configuration error: %v\n", err)
 	}
 
-	if err := run(cfg); err != nil {
+	if err := pkg.Run(cfg); err != nil {
 		errExit(err.Error())
 	}
-}
-
-func run(cfg *config.Config) error {
-	return pkg.Run(cfg)
 }
 
 func errExit(format string, args ...interface{}) {
