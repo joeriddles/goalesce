@@ -78,7 +78,7 @@ func TestParse_Cars(t *testing.T) {
 	parser := NewParser(noopLogger, cfg)
 	actual, err := parser.Parse(cfg.InputFolderPath)
 	require.NoError(t, err)
-	assert.Equal(t, 5, len(actual))
+	assert.Equal(t, 6, len(actual))
 
 	expectedManufacturer := &entity.GormModelMetadata{
 		Name: "Manufacturer",
