@@ -143,19 +143,9 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		}
 
 		createStr := fmt.Sprintf("Create%v", metadata.Name)
-		createApiMetadata, err := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
+		createApiMetadata, _ := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
 			return m.Name == createStr
 		})
-		if err != nil {
-			g.logger.Printf("could not find createApiMetadata for %v", metadata.Name)
-			continue
-		}
-
-		for _, createApiField := range createApiMetadata.AllFields() {
-			field := metadata.GetField(createApiField.Name)
-			createApiField.MapFunc = field.MapApiFunc
-			createApiField.MapApiFunc = field.MapFunc
-		}
 
 		if err := g.generateMapper(metadata, apiMetadata); err != nil {
 			return err
@@ -164,6 +154,12 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		// Don't generate anything but the mapper for excluded models
 		if slices.Contains(g.cfg.ExcludeModels, metadata.Name) {
 			continue
+		}
+
+		for _, createApiField := range createApiMetadata.AllFields() {
+			field := metadata.GetField(createApiField.Name)
+			createApiField.MapFunc = field.MapApiFunc
+			createApiField.MapApiFunc = field.MapFunc
 		}
 
 		if err := g.generateRepository(metadata); err != nil {
