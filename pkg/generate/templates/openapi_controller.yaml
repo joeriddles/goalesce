@@ -97,14 +97,14 @@ components:
     {{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}
           items:
             {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
           {{end}}{{end}}
-        {{end}}{{range .Embedded}}{{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{end}}{{range .Embedded}}{{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}
@@ -121,7 +121,7 @@ components:
     Create{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{if .|ShouldCreateField}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{if .|ShouldCreateField}}{{.Name|ToSnakeCase}}:{{with  .|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}
@@ -135,7 +135,7 @@ components:
     Update{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .Type|ToOpenApiType}}
+        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}

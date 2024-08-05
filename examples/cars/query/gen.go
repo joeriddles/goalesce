@@ -17,35 +17,38 @@ import (
 
 func Use(db *gorm.DB, opts ...gen.DOOption) *Query {
 	return &Query{
-		db:           db,
-		Manufacturer: newManufacturer(db, opts...),
-		Part:         newPart(db, opts...),
-		Person:       newPerson(db, opts...),
-		Vehicle:      newVehicle(db, opts...),
-		VehicleModel: newVehicleModel(db, opts...),
+		db:             db,
+		Manufacturer:   newManufacturer(db, opts...),
+		Part:           newPart(db, opts...),
+		Person:         newPerson(db, opts...),
+		Vehicle:        newVehicle(db, opts...),
+		VehicleForSale: newVehicleForSale(db, opts...),
+		VehicleModel:   newVehicleModel(db, opts...),
 	}
 }
 
 type Query struct {
 	db *gorm.DB
 
-	Manufacturer manufacturer
-	Part         part
-	Person       person
-	Vehicle      vehicle
-	VehicleModel vehicleModel
+	Manufacturer   manufacturer
+	Part           part
+	Person         person
+	Vehicle        vehicle
+	VehicleForSale vehicleForSale
+	VehicleModel   vehicleModel
 }
 
 func (q *Query) Available() bool { return q.db != nil }
 
 func (q *Query) clone(db *gorm.DB) *Query {
 	return &Query{
-		db:           db,
-		Manufacturer: q.Manufacturer.clone(db),
-		Part:         q.Part.clone(db),
-		Person:       q.Person.clone(db),
-		Vehicle:      q.Vehicle.clone(db),
-		VehicleModel: q.VehicleModel.clone(db),
+		db:             db,
+		Manufacturer:   q.Manufacturer.clone(db),
+		Part:           q.Part.clone(db),
+		Person:         q.Person.clone(db),
+		Vehicle:        q.Vehicle.clone(db),
+		VehicleForSale: q.VehicleForSale.clone(db),
+		VehicleModel:   q.VehicleModel.clone(db),
 	}
 }
 
@@ -59,30 +62,33 @@ func (q *Query) WriteDB() *Query {
 
 func (q *Query) ReplaceDB(db *gorm.DB) *Query {
 	return &Query{
-		db:           db,
-		Manufacturer: q.Manufacturer.replaceDB(db),
-		Part:         q.Part.replaceDB(db),
-		Person:       q.Person.replaceDB(db),
-		Vehicle:      q.Vehicle.replaceDB(db),
-		VehicleModel: q.VehicleModel.replaceDB(db),
+		db:             db,
+		Manufacturer:   q.Manufacturer.replaceDB(db),
+		Part:           q.Part.replaceDB(db),
+		Person:         q.Person.replaceDB(db),
+		Vehicle:        q.Vehicle.replaceDB(db),
+		VehicleForSale: q.VehicleForSale.replaceDB(db),
+		VehicleModel:   q.VehicleModel.replaceDB(db),
 	}
 }
 
 type queryCtx struct {
-	Manufacturer IManufacturerDo
-	Part         IPartDo
-	Person       IPersonDo
-	Vehicle      IVehicleDo
-	VehicleModel IVehicleModelDo
+	Manufacturer   IManufacturerDo
+	Part           IPartDo
+	Person         IPersonDo
+	Vehicle        IVehicleDo
+	VehicleForSale IVehicleForSaleDo
+	VehicleModel   IVehicleModelDo
 }
 
 func (q *Query) WithContext(ctx context.Context) *queryCtx {
 	return &queryCtx{
-		Manufacturer: q.Manufacturer.WithContext(ctx),
-		Part:         q.Part.WithContext(ctx),
-		Person:       q.Person.WithContext(ctx),
-		Vehicle:      q.Vehicle.WithContext(ctx),
-		VehicleModel: q.VehicleModel.WithContext(ctx),
+		Manufacturer:   q.Manufacturer.WithContext(ctx),
+		Part:           q.Part.WithContext(ctx),
+		Person:         q.Person.WithContext(ctx),
+		Vehicle:        q.Vehicle.WithContext(ctx),
+		VehicleForSale: q.VehicleForSale.WithContext(ctx),
+		VehicleModel:   q.VehicleModel.WithContext(ctx),
 	}
 }
 

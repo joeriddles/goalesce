@@ -14,6 +14,7 @@ func main() {
 		model.Manufacturer{},
 		model.VehicleModel{},
 		model.Vehicle{},
+		model.VehicleForSale{},
 		model.Part{},
 		model.Person{},
 	)

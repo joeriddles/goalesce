@@ -543,8 +543,8 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"ToOpenApiType":     toOpenApiType,
 		"MapToModelType":    mapToModelType,
 		"MapToApiType":      mapToApiType,
-		"IsSimpleType":      isSimpleType,
-		"IsComplexType":     isComplexType,
+		"IsSimpleType":      utils.IsSimpleType,
+		"IsComplexType":     utils.IsComplexType,
 		"IsNullable":        isNullable,
 		"Not":               not,
 		"Types":             getTypesNamespace,
@@ -618,14 +618,6 @@ func runNpxCommand(command string, args ...string) (string, error) {
 	return string(output), err
 }
 
-type OpenApiType struct {
-	Type     string
-	Ref      *string
-	Items    *map[string]string
-	Format   *string
-	Nullable bool
-}
-
 // Map the model field to a type for mapping to a model
 func mapToModelType(field entity.GormModelField) string {
 	result := ""
@@ -637,7 +629,7 @@ func mapToModelType(field entity.GormModelField) string {
 	case "gorm.DeletedAt":
 		result = fmt.Sprintf("%v: gorm.DeletedAt{Time: *obj.%v},", field.Name, apiField)
 	default:
-		if isSimpleType(field.Type) {
+		if utils.IsSimpleType(field.Type) {
 			result = fmt.Sprintf("%v: obj.%v,", field.Name, apiField)
 		} else {
 			// TODO(joeriddles): map complex types
@@ -665,66 +657,30 @@ func mapToApiType(field entity.GormModelField) string {
 	return result
 }
 
-// TODO(joeriddles): Refactor this monstrosity
-func toOpenApiType(typ string) *OpenApiType {
-	if isPointer := strings.HasPrefix(typ, "*"); isPointer {
-		typ = typ[1:]
-		result := toOpenApiType(typ)
-		result.Nullable = true
-		return result
-	}
+func toOpenApiType(field entity.GormModelField) *utils.OpenApiType {
+	if field.Tag != "" {
+		settings, err := utils.ParseGoalesceTagSettings(field.Tag)
+		if err == nil && len(settings) > 0 {
+			openApiType := &utils.OpenApiType{}
 
-	if isArray := strings.HasPrefix(typ, "[]"); isArray {
-		typ = typ[2:]
-		elemType := toOpenApiType(typ)
-		elemType.Nullable = false
-		items := map[string]string{}
-		if elemType.Ref != nil {
-			items["$ref"] = *elemType.Ref
-		} else {
-			items["type"] = elemType.Type
-		}
+			if typ, ok := settings["openapi_type"]; ok {
+				openApiType.Type = typ
+			}
+			if ref, ok := settings["openapi_ref"]; ok {
+				openApiType.Ref = &ref
+			}
+			if format, ok := settings["openapi_format"]; ok {
+				openApiType.Format = &format
+			}
+			if nullable, ok := settings["openapi_nullable"]; ok {
+				openApiType.Nullable = strings.ToLower(nullable) == "true"
+			}
 
-		return &OpenApiType{
-			Type:     "array",
-			Items:    &items,
-			Nullable: true,
+			return openApiType
 		}
 	}
 
-	var result *OpenApiType
-	switch typ {
-	case "string":
-		result = &OpenApiType{Type: "string"}
-	case "time.Time":
-		format := "date-time"
-		result = &OpenApiType{Type: "string", Format: &format}
-	case "gorm.io/gorm.DeletedAt":
-		format := "date-time"
-		result = &OpenApiType{Type: "string", Format: &format, Nullable: true}
-	case "int", "uint":
-		result = &OpenApiType{Type: "integer"}
-	case "int64":
-		format := "int64"
-		result = &OpenApiType{Type: "integer", Format: &format}
-	case "float", "float64":
-		format := "float"
-		result = &OpenApiType{Type: "number", Format: &format}
-	case "bool":
-		result = &OpenApiType{Type: "boolean"}
-	default:
-		var typeRef *string = nil
-		if !isSimpleType(typ) {
-			typeRefVal := fmt.Sprintf("./%v.gen.yaml#/components/schemas/%v", utils.ToSnakeCase(typ), typ)
-			typeRef = &typeRefVal
-			result = &OpenApiType{Type: typ, Ref: typeRef}
-		} else {
-			// TODO(joeriddles): panic?
-			result = &OpenApiType{Type: typ}
-		}
-	}
-
-	return result
+	return utils.ToOpenApiType(field.Type)
 }
 
 func wrapID(model *entity.GormModelMetadata) string {
@@ -819,7 +775,7 @@ func convertField(
 			}
 
 			// TODO(joeriddles): add field to GormModelField for references to user-defined models?
-			if isComplexType(dstField.Type) && !strings.Contains(dstField.Type, ".") {
+			if utils.IsComplexType(dstField.Type) && !strings.Contains(dstField.Type, ".") {
 				isSrcPtr := strings.Contains(field.Type, "*")
 				mapperName, isDstPtr := strings.CutPrefix(dstField.Type, "*")
 				if dst.IsApi {
@@ -886,23 +842,12 @@ func convertField(
 	return fmt.Sprintf("%v.%v = %v.%v", to, dstField.Name, from, field.Name)
 }
 
-func isComplexType(typ string) bool {
-	if typ == "" {
-		return false
-	}
-	return strings.HasPrefix(typ, "*") || !strings.HasPrefix(typ, "[]") || typ[0:1] != strings.ToUpper(typ[0:1])
-}
-
-func isSimpleType(t string) bool {
-	return !isComplexType(t)
-}
-
 func not(v bool) bool {
 	return !v
 }
 
 func isNullable(t string) bool {
-	openApiType := toOpenApiType(t)
+	openApiType := utils.ToOpenApiType(t)
 	return openApiType.Nullable
 }
 

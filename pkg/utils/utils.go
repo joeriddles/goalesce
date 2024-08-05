@@ -127,3 +127,44 @@ func StripModulePackage(s, moduleName string) string {
 	s = re.ReplaceAllString(s, "")
 	return s
 }
+
+// Is the type a non-simple type?
+func IsComplexType(typ string) bool {
+	if typ == "" {
+		return false
+	}
+	return strings.HasPrefix(typ, "*") || !strings.HasPrefix(typ, "[]") || typ[0:1] != strings.ToUpper(typ[0:1])
+}
+
+// Is the type a simple, built-in type?
+func IsSimpleType(t string) bool {
+	return !IsComplexType(t)
+}
+
+var goalesceTagPattern *regexp.Regexp = regexp.MustCompile(`goalesce:"(.*?)"`)
+
+// Parse goalesce settings from a field's tag
+func ParseGoalesceTagSettings(tag string) (map[string]string, error) {
+	settings := map[string]string{}
+
+	if !goalesceTagPattern.MatchString(tag) {
+		return settings, nil
+	}
+
+	matches := goalesceTagPattern.FindStringSubmatch(tag)
+	gormSettings := strings.Split(matches[1], ";")
+	for _, kvp := range gormSettings {
+		kvp = strings.TrimSpace(kvp)
+		if kvp == "" {
+			continue
+		}
+
+		keyAndValue := strings.SplitN(kvp, ":", 2)
+		if len(keyAndValue) != 2 {
+			return nil, fmt.Errorf("cannot parse goalesce settings key-value pair: %v", kvp)
+		}
+		settings[keyAndValue[0]] = keyAndValue[1]
+	}
+
+	return settings, nil
+}

@@ -7,6 +7,7 @@ replace github.com/joeriddles/goalesce => ../..
 require (
 	github.com/getkin/kin-openapi v0.126.0
 	github.com/oapi-codegen/runtime v1.1.1
+	github.com/shopspring/decimal v1.4.0
 	github.com/stretchr/testify v1.9.0
 	gorm.io/driver/sqlite v1.4.3
 	gorm.io/gen v0.3.26

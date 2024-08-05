@@ -23,9 +23,10 @@ func (m *GormModelMetadata) AllFields() []*GormModelField {
 }
 
 type GormModelField struct {
-	Name string
-	Type string
-	Tag  string
+	Name        string
+	Type        string
+	Tag         string
+	OpenApiType string
 
 	t types.Type
 }

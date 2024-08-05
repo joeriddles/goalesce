@@ -1,6 +1,9 @@
 package model
 
 import (
+	"time"
+
+	"github.com/shopspring/decimal"
 	"gorm.io/gorm"
 )
 
@@ -28,6 +31,15 @@ type Vehicle struct {
 	VehicleModel   VehicleModel
 	PersonID       *int
 	Person         *Person
+}
+
+// A vehicle for sale
+type VehicleForSale struct {
+	gorm.Model
+	VehicleID uint
+	Vehicle   Vehicle
+	Amount    decimal.Decimal `goalesce:"openapi_type:string" gorm:"type:decimal(10,2);"`
+	Duration  time.Duration   `goalesce:"openapi_type:integer;"`
 }
 
 // A vehicle part for one or more models, like a muffler for all Chevrolet pickups
