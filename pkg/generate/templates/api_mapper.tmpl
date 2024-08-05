@@ -10,12 +10,12 @@ import (
 )
 
 type {{.Name}}Mapper interface {
-  Map(model model.{{.dst.Name}}) {{Types}}{{.dst.Name}}
-	MapSlice(models []model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
-	MapPtr(model *model.{{.dst.Name}}) *{{Types}}{{.dst.Name}}
-	MapPtrSlice(models *[]model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
-	MapSlicePtrs(models []*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
-	MapPtrSlicePtrs(models *[]*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
+  Map(src model.{{.dst.Name}}) {{Types}}{{.dst.Name}}
+	MapSlice(srcs []model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
+	MapPtr(src *model.{{.dst.Name}}) *{{Types}}{{.dst.Name}}
+	MapPtrSlice(srcs *[]model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
+	MapSlicePtrs(srcs []*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
+	MapPtrSlicePtrs(srcs *[]*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}}
 }
 
 type {{.Name|ToCamelCase}}Mapper struct {}
@@ -24,45 +24,45 @@ func New{{.Name}}Mapper() {{.Name}}Mapper {
   return &{{.Name|ToCamelCase}}Mapper{}
 }
 
-func (m *{{.Name|ToCamelCase}}Mapper) Map(model model.{{.dst.Name}}) {{Types}}{{.dst.Name}} {
-  obj := &{{Types}}{{.dst.Name}}{}
+func (m *{{.Name|ToCamelCase}}Mapper) Map(src model.{{.dst.Name}}) {{Types}}{{.dst.Name}} {
+  dst := &{{Types}}{{.dst.Name}}{}
   {{range .src.AllFields}}
   {{.|ConvertToApi}}
   {{end}}
-	return *obj
+	return *dst
 }
 
-func (m *{{.Name|ToCamelCase}}Mapper) MapSlice(models []model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
-	objs := []{{Types}}{{.dst.Name}}{}
-	for _, model := range models {
-		obj := m.Map(model)
-		objs = append(objs, obj)
+func (m *{{.Name|ToCamelCase}}Mapper) MapSlice(srcs []model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
+	dsts := []{{Types}}{{.dst.Name}}{}
+	for _, src := range srcs {
+		dst := m.Map(src)
+		dsts = append(dsts, dst)
 	}
-	return &objs
+	return &dsts
 }
 
-func (m *{{.Name|ToCamelCase}}Mapper) MapPtr(model *model.{{.dst.Name}}) *{{Types}}{{.dst.Name}} {
-	if model == nil {
+func (m *{{.Name|ToCamelCase}}Mapper) MapPtr(src *model.{{.dst.Name}}) *{{Types}}{{.dst.Name}} {
+	if src == nil {
 		return nil
 	}
-	obj := m.Map(*model)
-	return &obj
+	dst := m.Map(*src)
+	return &dst
 }
 
-func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlice(models *[]model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
-	objs := m.MapSlice(*models)
-	return objs
+func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlice(srcs *[]model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
+	dsts := m.MapSlice(*srcs)
+	return dsts
 }
 
-func (m *{{.Name|ToCamelCase}}Mapper) MapSlicePtrs(models []*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
-	objs := []{{Types}}{{.dst.Name}}{}
-	for _, model := range models {
-		objPtr := m.MapPtr(model)
-		objs = append(objs, *objPtr)
+func (m *{{.Name|ToCamelCase}}Mapper) MapSlicePtrs(srcs []*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
+	dsts := []{{Types}}{{.dst.Name}}{}
+	for _, src := range srcs {
+		dstPtr := m.MapPtr(src)
+		dsts = append(dsts, *dstPtr)
 	}
-	return &objs
+	return &dsts
 }
 
-func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlicePtrs(models *[]*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
-	return m.MapSlicePtrs(*models)
+func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlicePtrs(srcs *[]*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
+	return m.MapSlicePtrs(*srcs)
 }

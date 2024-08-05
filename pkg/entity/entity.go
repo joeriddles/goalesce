@@ -22,11 +22,25 @@ func (m *GormModelMetadata) AllFields() []*GormModelField {
 	return fields
 }
 
+func (m *GormModelMetadata) GetField(name string) *GormModelField {
+	field, err := utils.First(m.AllFields(), func(field *GormModelField) bool {
+		return field.Name == name
+	})
+	if err != nil {
+		// 100% a developer error
+		panic(err)
+	}
+	return field
+}
+
 type GormModelField struct {
 	Name        string
 	Type        string
 	Tag         string
 	OpenApiType string
+
+	MapFunc    *string
+	MapApiFunc *string
 
 	t types.Type
 }

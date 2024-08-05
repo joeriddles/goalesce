@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"go/types"
 	"log"
+	"strings"
 
 	"github.com/joeriddles/goalesce/pkg/config"
 	"github.com/joeriddles/goalesce/pkg/entity"
+	"github.com/joeriddles/goalesce/pkg/utils"
 	"golang.org/x/tools/go/packages"
 )
 
@@ -48,6 +50,7 @@ func (p *parser) Parse(pkgStr string) ([]*entity.GormModelMetadata, error) {
 	}
 
 	metadatas := []*entity.GormModelMetadata{}
+	mapFuncs := map[string]*types.Signature{}
 
 	p.pkg = pkgs[0]
 	for _, name := range p.pkg.Types.Scope().Names() {
@@ -60,12 +63,39 @@ func (p *parser) Parse(pkgStr string) ([]*entity.GormModelMetadata, error) {
 			continue
 		}
 
+		if sig, ok := obj.Type().(*types.Signature); ok && strings.HasPrefix(name, "Map") {
+			mapFuncs[name] = sig
+		}
+
 		metadata, err := p.parseObject(obj.Type())
 		if err != nil {
 			return nil, err
 		}
 		if metadata != nil {
 			metadatas = append(metadatas, metadata)
+		}
+	}
+
+	fieldMap := map[string]*entity.GormModelField{}
+	for _, metadata := range metadatas {
+		for _, field := range metadata.AllFields() {
+			key := metadata.Name + field.Name
+			fieldMap[key] = field
+		}
+	}
+
+	for name := range mapFuncs {
+		name := name
+
+		key, _ := strings.CutPrefix(name, "MapApi")
+		if field, ok := fieldMap[key]; ok && field.MapApiFunc == nil {
+			field.MapApiFunc = &name
+			continue
+		}
+
+		key, _ = strings.CutPrefix(key, "Map")
+		if field, ok := fieldMap[key]; ok && field.MapFunc == nil {
+			field.MapFunc = &name
 		}
 	}
 
@@ -138,6 +168,18 @@ func (p *parser) parseStruct(t *types.Struct) *entity.GormModelMetadata {
 		modelField.WithType(field.Type(), p.cfg.ModuleName)
 		modelField.Tag = t.Tag(i)
 		metadata.Fields = append(metadata.Fields, modelField)
+
+		if modelField.Tag != "" {
+			settings, err := utils.ParseGoalesceTagSettings(modelField.Tag)
+			if err == nil {
+				if mapFunc, ok := settings["map"]; ok {
+					modelField.MapFunc = &mapFunc
+				}
+				if mapApiFunc, ok := settings["map_api"]; ok {
+					modelField.MapApiFunc = &mapApiFunc
+				}
+			}
+		}
 	}
 
 	return metadata

@@ -47,12 +47,12 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx context.C
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx context.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error) {
-	obj := request.Body
-  model := &model.{{.model.Name}}{}
+	src := request.Body
+  dst := &model.{{.model.Name}}{}
   {{range .createApi.Fields}}
   {{.|ConvertToModel}}{{end}}
 
-  createdModel, err := c.repository.Create(ctx, *model)
+  createdModel, err := c.repository.Create(ctx, *dst)
 	if err != nil {
 		return nil, err
 	}

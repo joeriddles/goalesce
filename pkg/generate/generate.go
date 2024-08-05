@@ -136,10 +136,22 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		}
 		apiMetadata.IsApi = true
 
+		for _, apiField := range apiMetadata.AllFields() {
+			field := metadata.GetField(apiField.Name)
+			apiField.MapFunc = field.MapApiFunc
+			apiField.MapApiFunc = field.MapFunc
+		}
+
 		createStr := fmt.Sprintf("Create%v", metadata.Name)
 		createApiMetadata, _ := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
 			return m.Name == createStr
 		})
+
+		for _, createApiField := range createApiMetadata.AllFields() {
+			field := metadata.GetField(createApiField.Name)
+			createApiField.MapFunc = field.MapApiFunc
+			createApiField.MapApiFunc = field.MapFunc
+		}
 
 		if err := g.generateMapper(metadata, apiMetadata); err != nil {
 			return err
@@ -405,10 +417,10 @@ func (g *generator) generateMapper(
 	apiFp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_api_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
 
 	convertToModel := func(field *entity.GormModelField) string {
-		return convertField(g.templates, field, metadata, "obj", "model")
+		return convertField(g.templates, field, metadata)
 	}
 	convertToApi := func(field *entity.GormModelField) string {
-		return convertField(g.templates, field, apiMetadata, "model", "obj")
+		return convertField(g.templates, field, apiMetadata)
 	}
 	g.templates.Funcs(template.FuncMap{
 		"ConvertToModel": convertToModel,
@@ -704,24 +716,14 @@ func convertField(
 	templates *template.Template,
 	field *entity.GormModelField,
 	dst *entity.GormModelMetadata,
-	from, to string,
 ) string {
-	match := func(e *entity.GormModelField) bool {
-		return e.Name == field.Name
-	}
+	from := "src"
+	to := "dst"
 
-	var dstField *entity.GormModelField
-	var err error
-	dstField, err = utils.First(dst.Fields, match)
-	if err != nil {
-		for _, embedded := range dst.Embedded {
-			dstField, err = utils.First(embedded.Fields, match)
-			if err == nil {
-				break
-			}
-			// 100% a developer error
-			panic(fmt.Sprintf("%v not found in %v", field.Name, dst.Name))
-		}
+	dstField := dst.GetField(field.Name)
+
+	if field.MapApiFunc != nil {
+		return fmt.Sprintf("%v.%v = model.%v(%v.%v)", to, dstField.Name, *field.MapApiFunc, from, field.Name)
 	}
 
 	srcType := field.GetType()
@@ -852,21 +854,31 @@ func isNullable(t string) bool {
 }
 
 func shouldCreateField(f entity.GormModelField) bool {
-	switch t := f.GetType().(type) {
-	case *types.Basic:
-		return true
-	case *types.Pointer:
-		switch t.Elem().(type) {
-		case *types.Basic:
-			return true
-		default:
-			return false
-		}
-	case *types.Array, *types.Slice, *types.Map, *types.Chan, *types.Struct, *types.Tuple, *types.Signature, *types.Named, *types.Interface:
-		return false
-	default:
-		panic(fmt.Sprintf("impossible: %T", t))
-	}
+	return !strings.HasPrefix(f.Type, "*") && !strings.HasPrefix(f.Type, "[]")
+
+	// typ := f.GetType()
+
+	// if f.MapFunc != nil {
+	// 	mapFuncSig := f.GetMapFuncSignature()
+	// 	resType := mapFuncSig.Results().At(0)
+	// 	typ = resType.Type()
+	// }
+
+	// switch t := typ.(type) {
+	// case *types.Basic:
+	// 	return true
+	// case *types.Pointer:
+	// 	switch t.Elem().(type) {
+	// 	case *types.Basic:
+	// 		return true
+	// 	default:
+	// 		return false
+	// 	}
+	// case *types.Array, *types.Slice, *types.Map, *types.Chan, *types.Struct, *types.Tuple, *types.Signature, *types.Named, *types.Interface:
+	// 	return false
+	// default:
+	// 	panic(fmt.Sprintf("impossible: %T", t))
+	// }
 }
 
 func createDirs(paths ...string) error {

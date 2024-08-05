@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/joeriddles/goalesce/examples/cars/generated/api"
 	"github.com/joeriddles/goalesce/examples/cars/generated/repository"
 	"github.com/joeriddles/goalesce/examples/cars/model"
 	"github.com/joeriddles/goalesce/examples/cars/query"
+	"github.com/shopspring/decimal"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/driver/sqlite"
@@ -19,7 +21,14 @@ import (
 func newQuery(t *testing.T) *query.Query {
 	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(model.Vehicle{}))
+	require.NoError(t, db.AutoMigrate(
+		model.Manufacturer{},
+		model.VehicleModel{},
+		model.Vehicle{},
+		model.VehicleForSale{},
+		model.Part{},
+		model.Person{},
+	))
 	query := query.Use(db)
 	return query
 }
@@ -179,4 +188,49 @@ func Test_DeleteVehicleID(t *testing.T) {
 
 	_, err = repo.Get(context.Background(), int64(vehicle.ID))
 	require.Error(t, err, "Vehicle was not deleted from database")
+}
+
+func Test_PostVehicleForSale(t *testing.T) {
+	// Arrange
+	query := newQuery(t)
+	repo := repository.NewVehicleForSaleRepository(query)
+	controller := api.NewVehicleForSaleController(query)
+
+	vehicleRepo := repository.NewVehicleRepository(query)
+	vehicle, err := vehicleRepo.Create(context.Background(), model.Vehicle{
+		Vin: "123",
+	})
+	require.NoError(t, err)
+	vehicleID := int(vehicle.ID)
+
+	// Act
+	response, err := controller.PostVehicleForSale(context.Background(), api.PostVehicleForSaleRequestObject{
+		Body: &api.CreateVehicleForSale{
+			VehicleID: vehicleID,
+			Amount:    "100.00",
+			Duration:  60,
+		},
+	})
+	require.NoError(t, err)
+
+	// Assert
+	rec := httptest.NewRecorder()
+	err = response.VisitPostVehicleForSaleResponse(rec)
+	require.NoError(t, err)
+	assert.Equal(t, 201, rec.Code)
+
+	vehicleForSale := &api.VehicleForSale{}
+	err = json.Unmarshal(rec.Body.Bytes(), vehicleForSale)
+	require.NoError(t, err)
+	assert.Equal(t, "100.00", vehicleForSale.Amount)
+	assert.Equal(t, 60, vehicleForSale.Duration)
+	assert.NotEqual(t, uint(0), vehicleForSale.ID)
+	assert.Equal(t, vehicleID, vehicleForSale.VehicleID)
+
+	vehicleForSaleFromDb, err := repo.Get(context.Background(), int64(vehicleForSale.ID))
+	require.NoError(t, err)
+	assert.NotEqual(t, uint(0), vehicleForSaleFromDb.ID)
+	assert.Equal(t, vehicleID, int(vehicleForSaleFromDb.VehicleID))
+	assert.Equal(t, time.Duration(60), vehicleForSaleFromDb.Duration)
+	assert.True(t, vehicleForSaleFromDb.Amount.Equal(decimal.NewFromFloat(100.00)))
 }
