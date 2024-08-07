@@ -34,6 +34,9 @@ func (m *{{.Name|ToCamelCase}}Mapper) Map(src {{Types}}{{.dst.Name}}) model.{{.d
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapSlice(srcs *[]{{Types}}{{.dst.Name}}) []model.{{.dst.Name}} {
 	dsts := []model.{{.dst.Name}}{}
+	if srcs == nil {
+		return dsts
+	}
 	for _, src := range *srcs {
 		dst := m.Map(src)
 		dsts = append(dsts, dst)
@@ -50,20 +53,29 @@ func (m *{{.Name|ToCamelCase}}Mapper) MapPtr(src *{{Types}}{{.dst.Name}}) *model
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlice(srcs *[]{{Types}}{{.dst.Name}}) *[]model.{{.dst.Name}} {
+	if srcs == nil {
+		return nil
+	}
 	dst := m.MapSlice(srcs)
 	return &dst
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapSlicePtrs(srcs *[]{{Types}}{{.dst.Name}}) []*model.{{.dst.Name}} {
-	dst := m.MapSlice(srcs)
-	dsttrs := []*model.{{.dst.Name}}{}
-	for _, src := range dst {
-		dsttrs = append(dsttrs, &src)
+	if srcs == nil {
+		return nil
 	}
-	return dsttrs
+	dst := m.MapSlice(srcs)
+	dstPtrs := []*model.{{.dst.Name}}{}
+	for _, src := range dst {
+		dstPtrs = append(dstPtrs, &src)
+	}
+	return dstPtrs
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlicePtrs(srcs *[]{{Types}}{{.dst.Name}}) *[]*model.{{.dst.Name}} {
+	if srcs == nil {
+		return nil
+	}
 	dst := m.MapSlicePtrs(srcs)
 	return &dst
 }

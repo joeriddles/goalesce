@@ -50,11 +50,17 @@ func (m *{{.Name|ToCamelCase}}Mapper) MapPtr(src *model.{{.dst.Name}}) *{{Types}
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlice(srcs *[]model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
+	if srcs == nil {
+		return nil
+	}
 	dsts := m.MapSlice(*srcs)
 	return dsts
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapSlicePtrs(srcs []*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
+	if srcs == nil {
+		return nil
+	}
 	dsts := []{{Types}}{{.dst.Name}}{}
 	for _, src := range srcs {
 		dstPtr := m.MapPtr(src)
@@ -64,5 +70,8 @@ func (m *{{.Name|ToCamelCase}}Mapper) MapSlicePtrs(srcs []*model.{{.dst.Name}}) 
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) MapPtrSlicePtrs(srcs *[]*model.{{.dst.Name}}) *[]{{Types}}{{.dst.Name}} {
+	if srcs == nil {
+		return nil
+	}
 	return m.MapSlicePtrs(*srcs)
 }
