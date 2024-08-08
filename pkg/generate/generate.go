@@ -547,21 +547,22 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 	}
 
 	funcMap := template.FuncMap{
-		"ToLower":           strings.ToLower,
-		"ToCamelCase":       utils.ToCamelCase,
-		"ToSnakeCase":       utils.ToSnakeCase,
-		"ToHtmlCase":        utils.ToHtmlCase,
-		"ToPascalCase":      utils.ToPascalCase,
-		"ToOpenApiType":     toOpenApiType,
-		"MapToModelType":    mapToModelType,
-		"MapToApiType":      mapToApiType,
-		"IsSimpleType":      utils.IsSimpleType,
-		"IsComplexType":     utils.IsComplexType,
-		"IsNullable":        isNullable,
-		"Not":               not,
-		"Types":             getTypesNamespace,
-		"WrapID":            wrapID,
-		"ShouldCreateField": shouldCreateField,
+		"ToLower":            strings.ToLower,
+		"ToCamelCase":        utils.ToCamelCase,
+		"ToSnakeCase":        utils.ToSnakeCase,
+		"ToHtmlCase":         utils.ToHtmlCase,
+		"ToPascalCase":       utils.ToPascalCase,
+		"ShouldExcludeField": shouldExcludeField,
+		"ToOpenApiType":      toOpenApiType,
+		"MapToModelType":     mapToModelType,
+		"MapToApiType":       mapToApiType,
+		"IsSimpleType":       utils.IsSimpleType,
+		"IsComplexType":      utils.IsComplexType,
+		"IsNullable":         isNullable,
+		"Not":                not,
+		"Types":              getTypesNamespace,
+		"WrapID":             wrapID,
+		"ShouldCreateField":  shouldCreateField,
 		// will be replaced per model
 		"ConvertToModel":           func() string { return "" },
 		"ConvertToApi":             func() string { return "" },
@@ -667,6 +668,31 @@ func mapToApiType(field entity.GormModelField) string {
 	}
 
 	return result
+}
+
+var primaryKeyRegex *regexp.Regexp = regexp.MustCompile("gorm:\"(.*?)\"")
+
+// Whether the field should be excluded from create and update operations
+func shouldExcludeField(field entity.GormModelField) bool {
+	if field.Parent != nil {
+		if parentNamedType, ok := field.Parent.GetType().(*types.Named); ok {
+			if parentNamedType.Obj().Pkg().Name() == "gorm" && parentNamedType.Obj().Name() == "Model" {
+				return true
+				// return field.Name == "CreatedAt" || field.Name == "UpdatedAt" || field.Name == "DeletedAt"
+			}
+		}
+	}
+
+	match := primaryKeyRegex.FindStringSubmatch(field.Tag)
+	if len(match) == 0 {
+		return false
+	}
+
+	gormParts := strings.Split(match[1], ";")
+	isPrimaryKey := slices.Contains(gormParts, "primarykey")
+	isAutoCreateTime := slices.ContainsFunc(gormParts, func(p string) bool { return strings.HasPrefix(p, "autoCreateTime") })
+	isAutoUpdateTime := slices.ContainsFunc(gormParts, func(p string) bool { return strings.HasPrefix(p, "isAutoUpdateTime") })
+	return isPrimaryKey || isAutoCreateTime || isAutoUpdateTime
 }
 
 func toOpenApiType(field entity.GormModelField) *utils.OpenApiType {

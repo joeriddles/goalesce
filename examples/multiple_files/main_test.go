@@ -129,7 +129,7 @@ func Test_PutUserID(t *testing.T) {
 	response, err := controller.PutUserID(context.Background(), api.PutUserIDRequestObject{
 		ID: int64(user.ID),
 		Body: &api.UpdateUser{
-			Name: &newName,
+			Name: newName,
 		},
 	})
 	require.NoError(t, err)

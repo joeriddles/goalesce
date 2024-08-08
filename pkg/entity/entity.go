@@ -11,6 +11,16 @@ type GormModelMetadata struct {
 	Fields   []*GormModelField
 	Embedded []*GormModelMetadata
 	IsApi    bool
+
+	t types.Type
+}
+
+func (m *GormModelMetadata) WithType(t types.Type) {
+	m.t = t
+}
+
+func (m *GormModelMetadata) GetType() types.Type {
+	return m.t
 }
 
 func (m *GormModelMetadata) AllFields() []*GormModelField {
@@ -41,6 +51,8 @@ type GormModelField struct {
 
 	MapFunc    *string
 	MapApiFunc *string
+
+	Parent *GormModelMetadata `json:"-"`
 
 	t types.Type
 }

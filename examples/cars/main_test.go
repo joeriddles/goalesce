@@ -21,6 +21,8 @@ import (
 func newQuery(t *testing.T) *query.Query {
 	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
 	require.NoError(t, err)
+	db.Exec("PRAGMA foreign_keys = ON;") // enable FK constraints
+
 	require.NoError(t, db.AutoMigrate(
 		model.Manufacturer{},
 		model.VehicleModel{},
@@ -33,24 +35,54 @@ func newQuery(t *testing.T) *query.Query {
 	return query
 }
 
-func Test_PostVehicle(t *testing.T) {
-	// Arrange
-	query := newQuery(t)
-	repo := repository.NewVehicleRepository(query)
-	controller := api.NewVehicleController(query)
+func setupModels(t *testing.T, query *query.Query) (*model.Manufacturer, *model.VehicleModel, *model.Vehicle, *model.Person) {
+	manufacturerRepo := repository.NewManufacturerRepository(query)
+	manufacturer, err := manufacturerRepo.Create(context.Background(), model.Manufacturer{
+		Name: "Mitsubishi",
+	})
+	require.NoError(t, err)
+
+	vehicleModelRepo := repository.NewVehicleModelRepository(query)
+	vehicleModel, err := vehicleModelRepo.Create(context.Background(), model.VehicleModel{
+		ManufacturerID: manufacturer.ID,
+		Name:           "Montero Sport",
+	})
+	require.NoError(t, err)
 
 	personRepo := repository.NewPersonRepository(query)
 	person, err := personRepo.Create(context.Background(), model.Person{
 		Name: "Jim",
 	})
 	require.NoError(t, err)
+
+	vehicleRepo := repository.NewVehicleRepository(query)
+	vehicle, err := vehicleRepo.Create(context.Background(), model.Vehicle{
+		VehicleModelID: vehicleModel.ID,
+		PersonID:       person.ID,
+		Vin:            "123",
+	})
+	require.NoError(t, err)
+
+	return manufacturer, vehicleModel, vehicle, person
+}
+
+func Test_PostVehicle(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	query := newQuery(t)
+	repo := repository.NewVehicleRepository(query)
+	controller := api.NewVehicleController(query)
+
+	_, vehicleModel, _, person := setupModels(t, query)
+	vehicleModelID := int(vehicleModel.ID)
 	personID := int(person.ID)
 
 	// Act
-	response, err := controller.PostVehicle(context.Background(), api.PostVehicleRequestObject{
+	response, err := controller.PostVehicle(ctx, api.PostVehicleRequestObject{
 		Body: &api.CreateVehicle{
-			Vin:      "123",
-			PersonID: &personID,
+			VehicleModelID: vehicleModelID,
+			PersonID:       personID,
+			Vin:            "456",
 		},
 	})
 	require.NoError(t, err)
@@ -64,28 +96,29 @@ func Test_PostVehicle(t *testing.T) {
 	vehicle := &api.Vehicle{}
 	err = json.Unmarshal(rec.Body.Bytes(), vehicle)
 	require.NoError(t, err)
-	assert.Equal(t, "123", vehicle.Vin)
 	assert.NotEqual(t, uint(0), vehicle.ID)
-	assert.Equal(t, personID, *vehicle.PersonID)
+	assert.Equal(t, "456", vehicle.Vin)
+	assert.Equal(t, vehicleModelID, vehicle.VehicleModelID)
+	assert.Equal(t, personID, vehicle.PersonID)
 
-	vehicleFromDb, err := repo.Get(context.Background(), int64(vehicle.ID))
+	vehicleFromDb, err := repo.Get(ctx, int64(vehicle.ID))
 	require.NoError(t, err)
-	assert.Equal(t, "123", vehicleFromDb.Vin)
+	assert.Equal(t, "456", vehicleFromDb.Vin)
 	assert.NotEqual(t, uint(0), vehicleFromDb.ID)
-	assert.Equal(t, personID, *vehicleFromDb.PersonID)
+	assert.Equal(t, uint(vehicleModelID), vehicleFromDb.VehicleModelID)
+	assert.Equal(t, uint(personID), vehicleFromDb.PersonID)
 }
 
 func Test_GetVehicle(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	query := newQuery(t)
-	repo := repository.NewVehicleRepository(query)
-	vehicle, err := repo.Create(context.Background(), model.Vehicle{Vin: "123"})
-	require.NoError(t, err)
-
 	controller := api.NewVehicleController(query)
 
+	_, _, vehicle, _ := setupModels(t, query)
+
 	// Act
-	response, err := controller.GetVehicle(context.Background(), api.GetVehicleRequestObject{})
+	response, err := controller.GetVehicle(ctx, api.GetVehicleRequestObject{})
 	require.NoError(t, err)
 
 	// Assert
@@ -106,15 +139,15 @@ func Test_GetVehicle(t *testing.T) {
 
 func Test_GetVehicleID(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	query := newQuery(t)
 	repo := repository.NewVehicleRepository(query)
-	vehicle, err := repo.Create(context.Background(), model.Vehicle{Vin: "123"})
-	require.NoError(t, err)
-
 	controller := api.NewVehicleController(query)
 
+	_, _, vehicle, _ := setupModels(t, query)
+
 	// Act
-	response, err := controller.GetVehicleID(context.Background(), api.GetVehicleIDRequestObject{
+	response, err := controller.GetVehicleID(ctx, api.GetVehicleIDRequestObject{
 		ID: int64(vehicle.ID),
 	})
 	require.NoError(t, err)
@@ -130,26 +163,26 @@ func Test_GetVehicleID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, vehicle.Vin, actual.Vin)
 
-	vehicleFromDb, err := repo.Get(context.Background(), int64(vehicle.ID))
+	vehicleFromDb, err := repo.Get(ctx, int64(vehicle.ID))
 	require.NoError(t, err)
 	assert.Equal(t, vehicle.Vin, vehicleFromDb.Vin)
 }
 
 func Test_PutVehicleID(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	query := newQuery(t)
 	repo := repository.NewVehicleRepository(query)
-	vehicle, err := repo.Create(context.Background(), model.Vehicle{Vin: "123"})
-	require.NoError(t, err)
-
 	controller := api.NewVehicleController(query)
 
+	_, vehicleModel, vehicle, _ := setupModels(t, query)
+
 	// Act
-	newVin := "Jim"
-	response, err := controller.PutVehicleID(context.Background(), api.PutVehicleIDRequestObject{
+	response, err := controller.PutVehicleID(ctx, api.PutVehicleIDRequestObject{
 		ID: int64(vehicle.ID),
 		Body: &api.UpdateVehicle{
-			Vin: &newVin,
+			VehicleModelID: int(vehicle.VehicleModelID),
+			Vin:            "456",
 		},
 	})
 	require.NoError(t, err)
@@ -160,22 +193,23 @@ func Test_PutVehicleID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 204, rec.Code)
 
-	vehicle, err = repo.Get(context.Background(), int64(vehicle.ID))
+	vehicle, err = repo.Get(ctx, int64(vehicle.ID))
 	require.NoError(t, err)
-	assert.Equal(t, newVin, vehicle.Vin)
+	assert.Equal(t, vehicleModel.ID, vehicle.VehicleModelID)
+	assert.Equal(t, "456", vehicle.Vin)
 }
 
 func Test_DeleteVehicleID(t *testing.T) {
 	// Arrange
+	ctx := context.Background()
 	query := newQuery(t)
 	repo := repository.NewVehicleRepository(query)
-	vehicle, err := repo.Create(context.Background(), model.Vehicle{Vin: "123"})
-	require.NoError(t, err)
-
 	controller := api.NewVehicleController(query)
 
+	_, _, vehicle, _ := setupModels(t, query)
+
 	// Act
-	response, err := controller.DeleteVehicleID(context.Background(), api.DeleteVehicleIDRequestObject{
+	response, err := controller.DeleteVehicleID(ctx, api.DeleteVehicleIDRequestObject{
 		ID: int64(vehicle.ID),
 	})
 	require.NoError(t, err)
@@ -186,7 +220,7 @@ func Test_DeleteVehicleID(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 204, rec.Code)
 
-	_, err = repo.Get(context.Background(), int64(vehicle.ID))
+	_, err = repo.Get(ctx, int64(vehicle.ID))
 	require.Error(t, err, "Vehicle was not deleted from database")
 }
 
@@ -196,11 +230,7 @@ func Test_PostVehicleForSale(t *testing.T) {
 	repo := repository.NewVehicleForSaleRepository(query)
 	controller := api.NewVehicleForSaleController(query)
 
-	vehicleRepo := repository.NewVehicleRepository(query)
-	vehicle, err := vehicleRepo.Create(context.Background(), model.Vehicle{
-		Vin: "123",
-	})
-	require.NoError(t, err)
+	_, _, vehicle, _ := setupModels(t, query)
 	vehicleID := int(vehicle.ID)
 
 	// Act

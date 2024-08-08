@@ -29,8 +29,8 @@ type Vehicle struct {
 	Vin            string
 	VehicleModelID uint
 	VehicleModel   VehicleModel
-	PersonID       *int
-	Person         *Person
+	PersonID       uint
+	Person         Person
 }
 
 // A vehicle for sale

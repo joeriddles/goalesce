@@ -77,12 +77,12 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx context
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {
-	obj := request.Body
-	update := map[string]interface{}{}
-  {{range .model.Fields}}
-  update["{{.Name}}"] = obj.{{.Name}}  {{end}}
+	src := request.Body
+  dst := &model.{{.model.Name}}{}
+  {{range .createApi.Fields}}
+  {{.|ConvertToModel}}{{end}}
 
-  if _, err := c.repository.Update(ctx, request.ID, update); err != nil {
+  if _, err := c.repository.Update(ctx, request.ID, *dst); err != nil {
     return nil, err
   }
   return {{Types}}Put{{.model.Name}}ID204Response{}, nil

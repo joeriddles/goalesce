@@ -112,7 +112,6 @@ components:
             {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
           {{end}}{{end}}
         {{end}}{{end}}
-
       required:
         {{range .Fields}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
         {{end}}
@@ -135,14 +134,26 @@ components:
     Update{{.Name}}:
       type: object
       properties:
-        {{range .Fields}}{{.Name|ToSnakeCase}}:{{with  .|ToOpenApiType}}
+        {{range .Fields}}{{if .|ShouldExcludeField}}{{continue}}{{end}}{{.Name|ToSnakeCase}}:{{with  .|ToOpenApiType}}
           {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
           format: {{.Format}}{{end}}{{if .Nullable}}
           nullable: true{{end}}{{if ne .Items nil}}
           items:
             {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
           {{end}}{{end}}
+        {{end}}{{range .Embedded}}{{range .Fields}}{{if .|ShouldExcludeField}}{{continue}}{{end}}{{.Name|ToSnakeCase}}:{{with  .|ToOpenApiType}}
+          {{if ne .Ref nil}}$ref: {{.Ref}}{{else}}type: {{.Type}}{{end}}{{if .Format}}
+          format: {{.Format}}{{end}}{{if .Nullable}}
+          nullable: true{{end}}{{if ne .Items nil}}
+          items:
+            {{range $key, $value := .Items}}{{$key}}: "{{$value}}"{{end}}
+          {{end}}{{end}}
+        {{end}}{{end}}
+      required:
+        {{range .Fields}}{{if .|ShouldExcludeField}}{{continue}}{{end}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
         {{end}}
+        {{range .Embedded}}{{range .Fields}}{{if .|ShouldExcludeField}}{{continue}}{{end}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
+        {{end}}{{end}}
     id:
       type: integer
       format: int64

@@ -41,7 +41,7 @@ func TestParse_Basic(t *testing.T) {
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{
-				Name:     "",
+				Name:     "Model",
 				Embedded: []*entity.GormModelMetadata{},
 				Fields: []*entity.GormModelField{
 					{
@@ -94,7 +94,7 @@ func TestParse_Cars(t *testing.T) {
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{
-				Name:     "",
+				Name:     "Model",
 				Embedded: []*entity.GormModelMetadata{},
 				Fields: []*entity.GormModelField{
 					{
@@ -143,7 +143,7 @@ func TestParse_Cars(t *testing.T) {
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{
-				Name:     "",
+				Name:     "Model",
 				Embedded: []*entity.GormModelMetadata{},
 				Fields: []*entity.GormModelField{
 					{
@@ -231,7 +231,7 @@ func TestParse_Custom(t *testing.T) {
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{
-				Name:     "",
+				Name:     "Base",
 				Embedded: []*entity.GormModelMetadata{},
 				Fields: []*entity.GormModelField{
 					{

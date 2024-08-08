@@ -26,7 +26,7 @@ type {{.model.Name}}Repository interface {
   Update(
     ctx context.Context,
     id int64,
-    update map[string]interface{},
+    update model.{{.model.Name}},
   ) (*model.User, error)
   
   Delete(
@@ -69,7 +69,7 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Create(
 func (r *{{.model.Name|ToCamelCase}}Repository) Update(
   ctx context.Context,
   id int64,
-  update map[string]interface{},
+  update model.{{.model.Name}},
 ) (*model.User, error) {
   return nil, nil
 }

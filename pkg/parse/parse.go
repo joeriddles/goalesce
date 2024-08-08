@@ -137,6 +137,7 @@ func (p *parser) parseNamed(t *types.Named) *entity.GormModelMetadata {
 	case *types.Struct:
 		metadata := p.parseStruct(u)
 		metadata.Name = t.Obj().Name()
+		metadata.WithType(t)
 		return metadata
 	case *types.Basic, *types.Map, *types.Array, *types.Slice, *types.Interface, *types.Signature:
 		return nil
@@ -150,6 +151,7 @@ func (p *parser) parseStruct(t *types.Struct) *entity.GormModelMetadata {
 		Fields:   []*entity.GormModelField{},
 		Embedded: []*entity.GormModelMetadata{},
 	}
+	metadata.WithType(t)
 
 	for i := 0; i < t.NumFields(); i++ {
 		field := t.Field(i)
@@ -158,12 +160,13 @@ func (p *parser) parseStruct(t *types.Struct) *entity.GormModelMetadata {
 		}
 
 		if field.Embedded() {
-			fieldMetadata, _ := p.parseObject(field.Type().Underlying())
+			fieldMetadata, _ := p.parseObject(field.Type())
 			metadata.Embedded = append(metadata.Embedded, fieldMetadata)
 			continue
 		}
 
 		modelField := &entity.GormModelField{}
+		modelField.Parent = metadata
 		modelField.Name = field.Name()
 		modelField.WithType(field.Type(), p.cfg.ModuleName)
 		modelField.Tag = t.Tag(i)

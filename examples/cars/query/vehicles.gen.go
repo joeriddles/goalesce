@@ -33,7 +33,7 @@ func newVehicle(db *gorm.DB, opts ...gen.DOOption) vehicle {
 	_vehicle.DeletedAt = field.NewField(tableName, "deleted_at")
 	_vehicle.Vin = field.NewString(tableName, "vin")
 	_vehicle.VehicleModelID = field.NewUint(tableName, "vehicle_model_id")
-	_vehicle.PersonID = field.NewInt(tableName, "person_id")
+	_vehicle.PersonID = field.NewUint(tableName, "person_id")
 	_vehicle.VehicleModel = vehicleBelongsToVehicleModel{
 		db: db.Session(&gorm.Session{}),
 
@@ -87,7 +87,7 @@ type vehicle struct {
 	DeletedAt      field.Field
 	Vin            field.String
 	VehicleModelID field.Uint
-	PersonID       field.Int
+	PersonID       field.Uint
 	VehicleModel   vehicleBelongsToVehicleModel
 
 	Person vehicleBelongsToPerson
@@ -113,7 +113,7 @@ func (v *vehicle) updateTableName(table string) *vehicle {
 	v.DeletedAt = field.NewField(table, "deleted_at")
 	v.Vin = field.NewString(table, "vin")
 	v.VehicleModelID = field.NewUint(table, "vehicle_model_id")
-	v.PersonID = field.NewInt(table, "person_id")
+	v.PersonID = field.NewUint(table, "person_id")
 
 	v.fillFieldMap()
 
