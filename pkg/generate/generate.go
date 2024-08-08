@@ -678,7 +678,6 @@ func shouldExcludeField(field entity.GormModelField) bool {
 		if parentNamedType, ok := field.Parent.GetType().(*types.Named); ok {
 			if parentNamedType.Obj().Pkg().Name() == "gorm" && parentNamedType.Obj().Name() == "Model" {
 				return true
-				// return field.Name == "CreatedAt" || field.Name == "UpdatedAt" || field.Name == "DeletedAt"
 			}
 		}
 	}
@@ -689,7 +688,7 @@ func shouldExcludeField(field entity.GormModelField) bool {
 	}
 
 	gormParts := strings.Split(match[1], ";")
-	isPrimaryKey := slices.Contains(gormParts, "primarykey")
+	isPrimaryKey := slices.Contains(gormParts, "primaryKey")
 	isAutoCreateTime := slices.ContainsFunc(gormParts, func(p string) bool { return strings.HasPrefix(p, "autoCreateTime") })
 	isAutoUpdateTime := slices.ContainsFunc(gormParts, func(p string) bool { return strings.HasPrefix(p, "isAutoUpdateTime") })
 	return isPrimaryKey || isAutoCreateTime || isAutoUpdateTime
