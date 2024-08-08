@@ -146,6 +146,10 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		createApiMetadata, _ := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
 			return m.Name == createStr
 		})
+		updateStr := fmt.Sprintf("Update%v", metadata.Name)
+		updateApiMetadata, _ := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
+			return m.Name == updateStr
+		})
 
 		if err := g.generateMapper(metadata, apiMetadata); err != nil {
 			return err
@@ -161,11 +165,16 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			createApiField.MapFunc = field.MapApiFunc
 			createApiField.MapApiFunc = field.MapFunc
 		}
+		for _, updateApiField := range updateApiMetadata.AllFields() {
+			field := metadata.GetField(updateApiField.Name)
+			updateApiField.MapFunc = field.MapApiFunc
+			updateApiField.MapApiFunc = field.MapFunc
+		}
 
 		if err := g.generateRepository(metadata); err != nil {
 			return err
 		}
-		if err := g.generateController(metadata, createApiMetadata); err != nil {
+		if err := g.generateController(metadata, createApiMetadata, updateApiMetadata); err != nil {
 			return err
 		}
 	}
@@ -353,6 +362,7 @@ func (g *generator) generateOpenApiRoutes(metadata *entity.GormModelMetadata) (s
 func (g *generator) generateController(
 	metadata *entity.GormModelMetadata,
 	createApiMetadata *entity.GormModelMetadata,
+	updateApiMetadata *entity.GormModelMetadata,
 ) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
 
@@ -371,6 +381,7 @@ func (g *generator) generateController(
 			"repositoryImportPath": g.repositoryPackage,
 			"model":                metadata,
 			"createApi":            createApiMetadata,
+			"updateApi":            updateApiMetadata,
 		},
 	)
 }

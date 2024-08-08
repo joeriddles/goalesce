@@ -81,7 +81,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx echo.Co
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx echo.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {
   src := request.Body
   dst := &model.{{.model.Name}}{}
-  {{range .createApi.Fields}}
+  {{range .updateApi.Fields}}
   {{.|ConvertToModel}}{{end}}
 
   if _, err := c.repository.Update(ctx.Request().Context(), request.ID, *dst); err != nil {

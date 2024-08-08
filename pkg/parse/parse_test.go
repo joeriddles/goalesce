@@ -193,35 +193,35 @@ func TestParse_Custom(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, 2, len(actual))
 
-	expected := &entity.GormModelMetadata{
+	expectedBase := &entity.GormModelMetadata{
 		Name:     "Base",
 		Embedded: []*entity.GormModelMetadata{},
 		Fields: []*entity.GormModelField{
 			{
 				Name: "ID",
 				Type: "int64",
-				Tag:  "gorm:\"column:id;type:bigint;primaryKey;autoIncrement:true\" json:\"id\"",
+				Tag:  `gorm:"column:id;type:bigint;primaryKey;autoIncrement:true"               json:"id"`,
 			},
 			{
 				Name: "CreatedAt",
 				Type: "time.Time",
-				Tag:  "gorm:\"column:created_at;type:timestamp with time zone\" json:\"created_at\"",
+				Tag:  `gorm:"column:created_at;type:timestamp with time zone;autoCreateTime;"   json:"created_at"`,
 			},
 			{
 				Name: "UpdatedAt",
 				Type: "time.Time",
-				Tag:  "gorm:\"column:updated_at;type:timestamp with time zone\" json:\"updated_at\"",
+				Tag:  `gorm:"column:updated_at;type:timestamp with time zone;isAutoUpdateTime;" json:"updated_at"`,
 			},
 			{
 				Name: "DeletedAt",
 				Type: "gorm.io/gorm.DeletedAt",
-				Tag:  "gorm:\"column:deleted_at;type:timestamp with time zone\" json:\"deleted_at\"",
+				Tag:  `gorm:"column:deleted_at;type:timestamp with time zone"                   json:"deleted_at"`,
 			},
 		},
 	}
-	assertJsonEq(t, expected, &actual[0])
+	assertJsonEq(t, expectedBase, &actual[0])
 
-	expected = &entity.GormModelMetadata{
+	expectedCustom := &entity.GormModelMetadata{
 		Name: "Custom",
 		Fields: []*entity.GormModelField{
 			{
@@ -230,35 +230,10 @@ func TestParse_Custom(t *testing.T) {
 			},
 		},
 		Embedded: []*entity.GormModelMetadata{
-			{
-				Name:     "Base",
-				Embedded: []*entity.GormModelMetadata{},
-				Fields: []*entity.GormModelField{
-					{
-						Name: "ID",
-						Type: "int64",
-						Tag:  "gorm:\"column:id;type:bigint;primaryKey;autoIncrement:true\" json:\"id\"",
-					},
-					{
-						Name: "CreatedAt",
-						Type: "time.Time",
-						Tag:  "gorm:\"column:created_at;type:timestamp with time zone\" json:\"created_at\"",
-					},
-					{
-						Name: "UpdatedAt",
-						Type: "time.Time",
-						Tag:  "gorm:\"column:updated_at;type:timestamp with time zone\" json:\"updated_at\"",
-					},
-					{
-						Name: "DeletedAt",
-						Type: "gorm.io/gorm.DeletedAt",
-						Tag:  "gorm:\"column:deleted_at;type:timestamp with time zone\" json:\"deleted_at\"",
-					},
-				},
-			},
+			expectedBase,
 		},
 	}
-	assertJsonEq(t, expected, &actual[1])
+	assertJsonEq(t, expectedCustom, &actual[1])
 }
 
 func assertJsonEq(t *testing.T, expected any, actual any) {
