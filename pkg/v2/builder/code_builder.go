@@ -2,6 +2,7 @@ package builder
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -11,6 +12,7 @@ type CodeBuilder interface {
 	IncrementLevel() CodeBuilder
 	DecrementLevel() CodeBuilder
 	Line(line string) CodeBuilder
+	Linef(line string, args ...any) CodeBuilder
 	Lines(lines ...string) CodeBuilder
 	BlankLine() CodeBuilder
 	Indented(line string) (CodeBuilder, error)
@@ -63,6 +65,10 @@ func (c *codeBuilder) Line(line string) CodeBuilder {
 	c.sb.Append(line).AppendLine()
 	c.onNewLine = true
 	return c
+}
+
+func (c *codeBuilder) Linef(line string, args ...any) CodeBuilder {
+	return c.Line(fmt.Sprintf(line, args...))
 }
 
 // Calls Line(string) for each line.

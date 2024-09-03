@@ -73,7 +73,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx context
     return nil, err
   }
   apiModel := c.apiMapper.Map(*model)
-  return {{Types}}Get{{.model.Name}}ID200JSONResponse(apiModel), err
+  return {{Types}}Get{{.model.Name}}ID200JSONResponse(apiModel), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {

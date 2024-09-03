@@ -8,25 +8,12 @@ import (
 
 func Test_Block(t *testing.T) {
 	cb := NewGoCodeBuilder()
-	cb.Block("if 1 == 1", nil, func() {
+	cb.Bock("if 1 == 1", func() {
 		cb.Line(`fmt.Println("hello world")`)
 	})
 	expected := `if 1 == 1 {
 	fmt.Println("hello world")
 }
-`
-	assert.Equal(t, expected, cb.String())
-}
-
-func Test_Block_WithCloseWith(t *testing.T) {
-	cb := NewGoCodeBuilder()
-	closeWith := ` // cool comment`
-	cb.Block("if 1 == 1", &closeWith, func() {
-		cb.Line(`fmt.Println("hello world")`)
-	})
-	expected := `if 1 == 1 {
-	fmt.Println("hello world")
-} // cool comment
 `
 	assert.Equal(t, expected, cb.String())
 }
