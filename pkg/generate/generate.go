@@ -558,22 +558,23 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 	}
 
 	funcMap := template.FuncMap{
-		"ToLower":            strings.ToLower,
-		"ToCamelCase":        utils.ToCamelCase,
-		"ToSnakeCase":        utils.ToSnakeCase,
-		"ToHtmlCase":         utils.ToHtmlCase,
-		"ToPascalCase":       utils.ToPascalCase,
-		"ShouldExcludeField": shouldExcludeField,
-		"ToOpenApiType":      toOpenApiType,
-		"MapToModelType":     mapToModelType,
-		"MapToApiType":       mapToApiType,
-		"IsSimpleType":       utils.IsSimpleType,
-		"IsComplexType":      utils.IsComplexType,
-		"IsNullable":         isNullable,
-		"Not":                not,
-		"Types":              getTypesNamespace,
-		"WrapID":             wrapID,
-		"ShouldCreateField":  shouldCreateField,
+		"ToLower":                   strings.ToLower,
+		"ToCamelCase":               utils.ToCamelCase,
+		"ToSnakeCase":               utils.ToSnakeCase,
+		"ToHtmlCase":                utils.ToHtmlCase,
+		"ToPascalCase":              utils.ToPascalCase,
+		"ShouldExcludeField":        shouldExcludeField,
+		"ToOpenApiType":             toOpenApiType,
+		"ToOpenApiTypeCreateUpdate": toOpenApiTypeCreateUpdate,
+		"MapToModelType":            mapToModelType,
+		"MapToApiType":              mapToApiType,
+		"IsSimpleType":              utils.IsSimpleType,
+		"IsComplexType":             utils.IsComplexType,
+		"IsNullable":                isNullable,
+		"Not":                       not,
+		"Types":                     getTypesNamespace,
+		"WrapID":                    wrapID,
+		"ShouldCreateField":         shouldCreateField,
 		// will be replaced per model
 		"ConvertToModel":           func() string { return "" },
 		"ConvertToApi":             func() string { return "" },
@@ -685,12 +686,24 @@ var primaryKeyRegex *regexp.Regexp = regexp.MustCompile("gorm:\"(.*?)\"")
 
 // Whether the field should be excluded from create and update operations
 func shouldExcludeField(field entity.GormModelField) bool {
+	// Exclude gorm base model fields
 	if field.Parent != nil {
 		if parentNamedType, ok := field.Parent.GetType().(*types.Named); ok {
 			if parentNamedType.Obj().Pkg().Name() == "gorm" && parentNamedType.Obj().Name() == "Model" {
 				return true
 			}
 		}
+	}
+
+	// exclude related objects
+	switch field.GetType().(type) {
+	case *types.Named:
+		return true
+		// case *types.Slice:
+		// 	switch t.Elem().(type) {
+		// 	case *types.Named:
+		// 		return true
+		// 	}
 	}
 
 	match := primaryKeyRegex.FindStringSubmatch(field.Tag)
@@ -729,6 +742,24 @@ func toOpenApiType(field entity.GormModelField) *utils.OpenApiType {
 	}
 
 	return utils.ToOpenApiType(field.Type)
+}
+
+// Convert the field to an Open API type for create and update operations.
+//
+// Mainly this converts many-to-many relationships to a list of IDs instead of
+// a list of object references.
+func toOpenApiTypeCreateUpdate(field entity.GormModelField) *utils.OpenApiType {
+	switch t := field.GetType().(type) {
+	case *types.Slice:
+		switch t.Elem().(type) {
+		case *types.Named:
+			copy := field
+			(&copy).Type = "[]int"
+			return toOpenApiType(copy)
+		}
+	}
+
+	return toOpenApiType(field)
 }
 
 func wrapID(model *entity.GormModelMetadata) string {
