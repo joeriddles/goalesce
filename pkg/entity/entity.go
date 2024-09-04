@@ -7,6 +7,7 @@ import (
 )
 
 type GormModelMetadata struct {
+	Pkg      string
 	Name     string
 	Fields   []*GormModelField
 	Embedded []*GormModelMetadata

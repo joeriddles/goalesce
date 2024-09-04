@@ -1,26 +1,18 @@
 package entity
 
 import (
+	// TODO: remove dependency on "go/types" from V2
 	"go/types"
 
 	"github.com/joeriddles/goalesce/pkg/utils"
 )
 
 type GormModelMetadata struct {
+	Pkg      string
 	Name     string
 	Fields   []*GormModelField
 	Embedded []*GormModelMetadata
 	IsApi    bool
-
-	t types.Type
-}
-
-func (m *GormModelMetadata) WithType(t types.Type) {
-	m.t = t
-}
-
-func (m *GormModelMetadata) GetType() types.Type {
-	return m.t
 }
 
 func (m *GormModelMetadata) AllFields() []*GormModelField {

@@ -41,7 +41,7 @@ func TestControllerGenerator_Generate(t *testing.T) {
 	}
 
 	// Assert
-	expectedBytes, err := os.ReadFile("./test/controller_generator_test_generate.txt")
+	expectedBytes, err := os.ReadFile("./test/controller_generator_test_generate.expected.txt")
 	require.NoError(t, err)
 	expected := string(expectedBytes)
 

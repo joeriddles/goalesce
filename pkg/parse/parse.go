@@ -137,6 +137,7 @@ func (p *parser) parseNamed(t *types.Named) *entity.GormModelMetadata {
 	case *types.Struct:
 		metadata := p.parseStruct(u)
 		metadata.Name = t.Obj().Name()
+		metadata.Pkg = t.Obj().Pkg().Name()
 		metadata.WithType(t)
 		return metadata
 	case *types.Basic, *types.Map, *types.Array, *types.Slice, *types.Interface, *types.Signature:

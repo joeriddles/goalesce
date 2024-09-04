@@ -23,7 +23,7 @@ type goCodeBuilder struct {
 
 func NewGoCodeBuilder() GoCodeBuilder {
 	return &goCodeBuilder{
-		CodeBuilder: NewCodeBuilder(),
+		CodeBuilder: NewCodeBuilder(1, "\t"),
 	}
 }
 

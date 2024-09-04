@@ -30,14 +30,18 @@ type codeBuilder struct {
 	onNewLine  bool
 }
 
-func NewCodeBuilder() CodeBuilder {
+func NewCodeBuilder(indentSize int, indentChar string) CodeBuilder {
 	return &codeBuilder{
 		sb:         NewStringBuilder(),
 		level:      0,
-		indentSize: 1,
-		indentChar: "\t",
+		indentSize: indentSize,
+		indentChar: indentChar,
 		onNewLine:  true,
 	}
+}
+
+func NewDefaultCodeBuilder() CodeBuilder {
+	return NewCodeBuilder(1, "\t")
 }
 
 func (c *codeBuilder) GetLevel() int {

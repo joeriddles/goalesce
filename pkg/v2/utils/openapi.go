@@ -3,6 +3,8 @@ package utils
 import (
 	"fmt"
 	"strings"
+
+	"github.com/joeriddles/goalesce/pkg/v2/entity"
 )
 
 // Metadata for generating an OpenAPI field
@@ -74,4 +76,30 @@ func ToOpenApiType(typ string) *OpenApiType {
 	}
 
 	return result
+}
+
+func FieldToOpenApiType(field *entity.GormModelField) *OpenApiType {
+	if field.Tag != "" {
+		settings, err := ParseGoalesceTagSettings(field.Tag)
+		if err == nil && len(settings) > 0 {
+			openApiType := &OpenApiType{}
+
+			if typ, ok := settings["openapi_type"]; ok {
+				openApiType.Type = typ
+			}
+			if ref, ok := settings["openapi_ref"]; ok {
+				openApiType.Ref = &ref
+			}
+			if format, ok := settings["openapi_format"]; ok {
+				openApiType.Format = &format
+			}
+			if nullable, ok := settings["openapi_nullable"]; ok {
+				openApiType.Nullable = strings.ToLower(nullable) == "true"
+			}
+
+			return openApiType
+		}
+	}
+
+	return ToOpenApiType(field.Type)
 }

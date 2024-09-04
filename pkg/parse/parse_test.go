@@ -31,6 +31,7 @@ func TestParse_Basic(t *testing.T) {
 	assert.Equal(t, 1, len(actual))
 
 	expected := &entity.GormModelMetadata{
+		Pkg:  "model",
 		Name: "User",
 		Fields: []*entity.GormModelField{
 			{
@@ -41,6 +42,7 @@ func TestParse_Basic(t *testing.T) {
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{
+				Pkg:      "gorm",
 				Name:     "Model",
 				Embedded: []*entity.GormModelMetadata{},
 				Fields: []*entity.GormModelField{
@@ -81,6 +83,7 @@ func TestParse_Cars(t *testing.T) {
 	assert.Equal(t, 6, len(actual))
 
 	expectedManufacturer := &entity.GormModelMetadata{
+		Pkg:  "model",
 		Name: "Manufacturer",
 		Fields: []*entity.GormModelField{
 			{
@@ -94,6 +97,7 @@ func TestParse_Cars(t *testing.T) {
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{
+				Pkg:      "gorm",
 				Name:     "Model",
 				Embedded: []*entity.GormModelMetadata{},
 				Fields: []*entity.GormModelField{
@@ -120,6 +124,7 @@ func TestParse_Cars(t *testing.T) {
 		},
 	}
 	expectedModel := &entity.GormModelMetadata{
+		Pkg:  "model",
 		Name: "VehicleModel",
 		Fields: []*entity.GormModelField{
 
@@ -143,6 +148,7 @@ func TestParse_Cars(t *testing.T) {
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{
+				Pkg:      "gorm",
 				Name:     "Model",
 				Embedded: []*entity.GormModelMetadata{},
 				Fields: []*entity.GormModelField{
@@ -194,6 +200,7 @@ func TestParse_Custom(t *testing.T) {
 	assert.Equal(t, 2, len(actual))
 
 	expectedBase := &entity.GormModelMetadata{
+		Pkg:      "model",
 		Name:     "Base",
 		Embedded: []*entity.GormModelMetadata{},
 		Fields: []*entity.GormModelField{
@@ -222,6 +229,7 @@ func TestParse_Custom(t *testing.T) {
 	assertJsonEq(t, expectedBase, &actual[0])
 
 	expectedCustom := &entity.GormModelMetadata{
+		Pkg:  "model",
 		Name: "Custom",
 		Fields: []*entity.GormModelField{
 			{
