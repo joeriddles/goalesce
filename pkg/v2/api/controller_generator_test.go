@@ -28,10 +28,10 @@ func TestControllerGenerator_Generate(t *testing.T) {
 		},
 	}
 	services := generator.NewGeneratorServices(cfg)
-	generator := newControllerGenerator(model, model, model, services)
+	generator := newControllerGenerator(model, model, services)
 
 	// Act
-	actual, err := generator.Generate()
+	actual, err := generator.Generate(model)
 	require.NoError(t, err, actual)
 
 	if err == nil {

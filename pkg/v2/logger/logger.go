@@ -7,7 +7,7 @@ type LoggerFactory interface {
 }
 
 type Logger interface {
-	Log(string)
+	Log(string, ...any)
 }
 
 type loggerFactory struct{}
@@ -22,6 +22,7 @@ func (l *loggerFactory) CreateLogger() Logger {
 
 type logger struct{}
 
-func (l *logger) Log(message string) {
-	fmt.Printf("%v\n", message)
+func (l *logger) Log(message string, args ...any) {
+	out := fmt.Sprintf(message, args...)
+	fmt.Printf("%v\n", out)
 }

@@ -4,32 +4,32 @@ import (
 	"io"
 )
 
-type Generator interface {
+type Generator[T any] interface {
 	DefaultOutputPath() string
 	EffectiveOutputPath() string
 	IsDisabled() bool
-	Generate() (string, error)
+	Generate(T) (string, error)
 }
 
 type Cleaner interface {
 	Clean(knownGoodFiles []string)
 }
-type ModelGenerator interface {
-	Generator
+type ModelGenerator[T any] interface {
+	Generator[T]
 }
 
-type CompositeGenerator interface {
-	Generator
-	GetGenerators() []Generator
+type CompositeGenerator[T any] interface {
+	Generator[T]
+	GetGenerators() []Generator[T]
 	GetCleaners() []Cleaner
 }
 
-type FileGenerator interface {
-	Generator
+type FileGenerator[T any] interface {
+	Generator[T]
 	GetOutput() io.Reader
 }
 
-type ModelFileGenerator[TModel any] interface {
-	ModelGenerator
+type ModelFileGenerator[T any] interface {
+	ModelGenerator[T]
 	GetOutput() io.Reader
 }

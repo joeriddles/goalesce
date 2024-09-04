@@ -61,10 +61,10 @@ func TestOpenapiYamlControllerGenerator_Generate(t *testing.T) {
 		},
 	}
 
-	generator := newOpenapiYamlControllerGenerator(model)
+	generator := newOpenapiYamlControllerGenerator()
 
 	// Act
-	actual, err := generator.Generate()
+	actual, err := generator.Generate(model)
 	require.NoError(t, err, actual)
 
 	if err == nil {

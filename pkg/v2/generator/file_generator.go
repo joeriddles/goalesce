@@ -2,34 +2,34 @@ package generator
 
 import "io"
 
-type fileGenerator struct {
+type fileGenerator[T any] struct {
 }
 
 // DefaultOutputPath implements FileGenerator.
-func (f *fileGenerator) DefaultOutputPath() string {
+func (f *fileGenerator[T]) DefaultOutputPath() string {
 	panic("unimplemented")
 }
 
 // EffectiveOutputPath implements FileGenerator.
-func (f *fileGenerator) EffectiveOutputPath() string {
+func (f *fileGenerator[T]) EffectiveOutputPath() string {
 	panic("unimplemented")
 }
 
 // Generate implements FileGenerator.
-func (f *fileGenerator) Generate() (string, error) {
+func (f *fileGenerator[T]) Generate(_ T) (string, error) {
 	panic("unimplemented")
 }
 
 // GetOutput implements FileGenerator.
-func (f *fileGenerator) GetOutput() io.Reader {
+func (f *fileGenerator[T]) GetOutput() io.Reader {
 	panic("unimplemented")
 }
 
 // IsDisabled implements FileGenerator.
-func (f *fileGenerator) IsDisabled() bool {
+func (f *fileGenerator[T]) IsDisabled() bool {
 	panic("unimplemented")
 }
 
-func NewFileGenerator() FileGenerator {
-	return &fileGenerator{}
+func NewFileGenerator[T any]() FileGenerator[T] {
+	return &fileGenerator[T]{}
 }
