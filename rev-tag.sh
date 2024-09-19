@@ -3,7 +3,7 @@ set -eu
 
 REV="${1:-}"
 # Use latest tag from remote
-LATEST_TAG=$(git ls-remote --tags origin | grep -o -e 'v\d\+\.\d\+\.\d\+' | sort --reverse | head -n 1)
+LATEST_TAG=$(git ls-remote --tags origin | grep -o -e 'v\d\+\.\d\+\.\d\+' | sort --version-sort --reverse | head -n 1)
 
 # LATEST_TAG=$(git tag | sort --reverse | head -n 1)
 echo "Old tag: $LATEST_TAG"
