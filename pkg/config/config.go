@@ -31,6 +31,8 @@ type Config struct {
 	OpenApiFile string `yaml:"openapi_file"`
 	// Excludes these GORM models from the generated OpenAPI routes
 	ExcludeModels []string `yaml:"exclude_models,omitempty"`
+	// Exclude these field names from the generated create and read endpoints
+	ExcludeFields []string `yaml:"exclude_fields,omitempty"`
 	// If true, generates a sample main.go file for running the server
 	GenerateMain bool `yaml:"generate_main"`
 	// Override built-in templates from user-provided files

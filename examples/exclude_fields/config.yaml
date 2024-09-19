@@ -1,0 +1,9 @@
+input_folder_path: ./model
+output_file_path: ./generated
+module_name: github.com/joeriddles/goalesce/examples/exclude_fields
+models_package: github.com/joeriddles/goalesce/examples/exclude_fields/model
+query_package: github.com/joeriddles/goalesce/examples/exclude_fields/query
+clear_output_dir: true
+exclude_fields:
+  - UserID
+  - User

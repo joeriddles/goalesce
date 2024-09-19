@@ -563,7 +563,7 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"ToSnakeCase":        utils.ToSnakeCase,
 		"ToHtmlCase":         utils.ToHtmlCase,
 		"ToPascalCase":       utils.ToPascalCase,
-		"ShouldExcludeField": shouldExcludeField,
+		"ShouldExcludeField": g.shouldExcludeField,
 		"ToOpenApiType":      toOpenApiType,
 		"MapToModelType":     mapToModelType,
 		"MapToApiType":       mapToApiType,
@@ -684,7 +684,11 @@ func mapToApiType(field entity.GormModelField) string {
 var primaryKeyRegex *regexp.Regexp = regexp.MustCompile("gorm:\"(.*?)\"")
 
 // Whether the field should be excluded from create and update operations
-func shouldExcludeField(field entity.GormModelField) bool {
+func (g *generator) shouldExcludeField(field entity.GormModelField) bool {
+	if slices.Contains(g.cfg.ExcludeFields, field.Name) {
+		return true
+	}
+
 	if field.Parent != nil {
 		if parentNamedType, ok := field.Parent.GetType().(*types.Named); ok {
 			if parentNamedType.Obj().Pkg().Name() == "gorm" && parentNamedType.Obj().Name() == "Model" {
