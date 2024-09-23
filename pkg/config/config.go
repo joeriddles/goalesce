@@ -35,6 +35,8 @@ type Config struct {
 	ExcludeFields []string `yaml:"exclude_fields,omitempty"`
 	// If true, generates a sample main.go file for running the server
 	GenerateMain bool `yaml:"generate_main"`
+	// If true, generates a server that uses all generated controllers
+	GenerateServer bool `yaml:"generate_server"`
 	// Override built-in templates from user-provided files
 	UserTemplates map[string]string `yaml:"user_templates,omitempty"`
 
@@ -63,7 +65,12 @@ func FromYamlFile(fp string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error reading config file '%s': %v", fp, err)
 	}
-	cfg := &Config{}
+
+	cfg := &Config{
+		// Defaults
+		GenerateServer: true,
+	}
+
 	if err = yaml.UnmarshalStrict(configFile, cfg); err != nil {
 		return nil, fmt.Errorf("error parsing config: %v", err)
 	}

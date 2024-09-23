@@ -189,8 +189,11 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 			filteredMetadatas = append(filteredMetadatas, metadata)
 		}
 	}
-	if err := g.generateServer(filteredMetadatas); err != nil {
-		return err
+
+	if g.cfg.GenerateServer {
+		if err := g.generateServer(filteredMetadatas); err != nil {
+			return err
+		}
 	}
 
 	if g.cfg.GenerateMain {
