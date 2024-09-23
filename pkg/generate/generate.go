@@ -65,6 +65,7 @@ func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 		}
 		pkg := filepath.Join(cfg.ModuleName, relPkg)
 		pkg = filepath.Dir(pkg) // remove filename
+		pkg = filepathToPackage(pkg)
 		typesPackage = &pkg
 	}
 
@@ -77,6 +78,9 @@ func NewGenerator(logger *log.Logger, cfg *config.Config) (Generator, error) {
 		}
 		repositoryPackage = filepath.Join(cfg.ModuleName, relPkg)
 	}
+
+	// Normalize filepath to Go package
+	repositoryPackage = filepathToPackage(repositoryPackage)
 
 	g := &generator{
 		logger:            logger,
@@ -930,4 +934,8 @@ func createDirs(paths ...string) error {
 		}
 	}
 	return nil
+}
+
+func filepathToPackage(path string) string {
+	return strings.ReplaceAll(path, "\\", "/")
 }
