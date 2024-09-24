@@ -2,78 +2,77 @@
 package repository
 
 import (
-  "context"
-
-  model "{{.pkg}}"
-  query "{{.queryPkg}}"
+	"context"
+	model "{{.pkg}}"
+	query "{{.queryPkg}}"
 )
 
 type {{.model.Name}}Repository interface {
-  List(
-    ctx context.Context,
-    filters any,
-  ) ([]*model.{{.model.Name}}, error)
+	List(
+		ctx context.Context,
+		filters any,
+	) ([]*model.{{.model.Name}}, error)
 
-  Get(
-    ctx context.Context,
-    id int64,
-  ) (*model.{{.model.Name}}, error)
-  
-  Create(
-    ctx context.Context,
-    {{.model.Name|ToCamelCase}} model.{{.model.Name}},
-  ) (*model.{{.model.Name}}, error)
-  
-  Update(
-    ctx context.Context,
-    id int64,
-    update model.{{.model.Name}},
-  ) (*model.{{.model.Name}}, error)
-  
-  Delete(
-    ctx context.Context,
-    id int64,
-  ) error
+	Get(
+		ctx context.Context,
+		id int64,
+	) (*model.{{.model.Name}}, error)
+	
+	Create(
+		ctx context.Context,
+		{{.model.Name|ToCamelCase}} model.{{.model.Name}},
+	) (*model.{{.model.Name}}, error)
+	
+	Update(
+		ctx context.Context,
+		id int64,
+		update model.{{.model.Name}},
+	) (*model.{{.model.Name}}, error)
+	
+	Delete(
+		ctx context.Context,
+		id int64,
+	) error
 }
 
 type {{.model.Name|ToCamelCase}}Repository struct {
-  query *query.Query
+	query *query.Query
 }
 
 func New{{.model.Name}}Repository(query *query.Query) {{.model.Name}}Repository {
-  return &{{.model.Name|ToCamelCase}}Repository{
-    query: query,
-  }
+	return &{{.model.Name|ToCamelCase}}Repository{
+		query: query,
+	}
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) List(
-  ctx context.Context,
-  filters any,
+	ctx context.Context,
+	filters any,
 ) ([]*model.{{.model.Name}}, error) {
-  return r.query.{{.model.Name}}.Find()
+	return r.query.{{.model.Name}}.Find()
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Get(
-  ctx context.Context,
-  id int64,
+	ctx context.Context,
+	id int64,
 ) (*model.{{.model.Name}}, error) {
-  return r.query.{{.model.Name}}.Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).First()
+	return r.query.{{.model.Name}}.Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).First()
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Create(
-  ctx context.Context,
-  {{.model.Name|ToCamelCase}} model.{{.model.Name}},
+	ctx context.Context,
+	{{.model.Name|ToCamelCase}} model.{{.model.Name}},
 ) (*model.{{.model.Name}}, error) {
-  err := r.query.{{.model.Name}}.Create(&{{.model.Name|ToCamelCase}})
+	err := r.query.{{.model.Name}}.Create(&{{.model.Name|ToCamelCase}})
 	return &{{.model.Name|ToCamelCase}}, err
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Update(
-  ctx context.Context,
-  id int64,
-  update model.{{.model.Name}},
+	ctx context.Context,
+	id int64,
+	update model.{{.model.Name}},
 ) (*model.{{.model.Name}}, error) {
-  {{.model.Name|ToCamelCase}} := &model.{{.model.Name}}{}
+	{{.model.Name|ToCamelCase}} := &model.{{.model.Name}}{}
 	_, err := r.query.{{.model.Name}}.
 		Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).
 		Omit(r.query.{{.model.Name}}.ID).
@@ -83,10 +82,10 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Update(
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Delete(
-  ctx context.Context,
-  id int64,
+	ctx context.Context,
+	id int64,
 ) error {
-  _, err := r.query.{{.model.Name}}.
+	_, err := r.query.{{.model.Name}}.
 		Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).
 		Delete()
 	return err

@@ -530,12 +530,8 @@ func (g *generator) generateGo(fp string, template string, data any) error {
 		return err
 	}
 
-	// Format the code before saving to file
+	// Format code and fix missing imports
 	code := b.Bytes()
-	re := regexp.MustCompile("\n\\s+(\n\\s+)")
-	code = re.ReplaceAll(code, []byte("$1"))
-
-	// Format and fix missing imports
 	code, err = imports.Process(fp, code, &imports.Options{})
 	if err != nil {
 		return err
@@ -548,6 +544,13 @@ func (g *generator) generateGo(fp string, template string, data any) error {
 		return err
 	}
 	if err := w.Flush(); err != nil {
+		return err
+	}
+
+	// Format imports with goimports tool
+	cmd := exec.Command("goimports", "-w", fp)
+	_, err = cmd.CombinedOutput()
+	if err != nil {
 		return err
 	}
 

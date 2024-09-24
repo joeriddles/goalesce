@@ -4,7 +4,6 @@ package main
 import (
 	"log"
 	"net/http"
-
 	"{{.apiImportPath}}"
 )
 
@@ -18,7 +17,7 @@ func main() {
 
 	s := &http.Server{
 		Handler: h,
-		Addr:    "0.0.0.0:8080",
+		Addr:		"0.0.0.0:8080",
 	}
 
 	// And we serve HTTP until the world ends.

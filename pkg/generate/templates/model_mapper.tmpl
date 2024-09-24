@@ -3,14 +3,13 @@ package {{.package}}
 
 import (
 	"gorm.io/gorm"
-
-  model "{{.pkg}}"
-  {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
+	model "{{.pkg}}"
+	{{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 	"github.com/joeriddles/goalesce/pkg/utils"
 )
 
 type {{.Name}}Mapper interface {
-  Map(src {{Types}}{{.dst.Name}}) model.{{.dst.Name}}
+	Map(src {{Types}}{{.dst.Name}}) model.{{.dst.Name}}
 	MapSlice(srcs *[]{{Types}}{{.dst.Name}}) []model.{{.dst.Name}}
 	MapPtr(src *{{Types}}{{.dst.Name}}) *model.{{.dst.Name}}
 	MapPtrSlice(srcs *[]{{Types}}{{.dst.Name}}) *[]model.{{.dst.Name}}
@@ -21,14 +20,14 @@ type {{.Name}}Mapper interface {
 type {{.Name|ToCamelCase}}Mapper struct {}
 
 func New{{.Name}}Mapper() {{.Name}}Mapper {
-  return &{{.Name|ToCamelCase}}Mapper{}
+	return &{{.Name|ToCamelCase}}Mapper{}
 }
 
 func (m *{{.Name|ToCamelCase}}Mapper) Map(src {{Types}}{{.dst.Name}}) model.{{.dst.Name}} {
-  dst := &model.{{.dst.Name}}{}
-  {{range .src.Fields}}
-  {{.|ConvertToModel}}
-  {{end}}
+	dst := &model.{{.dst.Name}}{}
+	{{range .src.Fields}}
+	{{.|ConvertToModel}}
+	{{end}}
 	return *dst
 }
 

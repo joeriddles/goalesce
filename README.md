@@ -16,6 +16,11 @@
 $ go install github.com/joeriddles/goalesce/cmd/goalesce@latest
 ```
 
+Goalesce requires additional tooling to work correctly. 
+- Ensure a modern version of [Node](https://nodejs.org) is installed (LTS+).
+- Ensure the `goimports` tool is also installed:
+	- `go install golang.org/x/tools/cmd/goimports@latest`
+
 ## Usage
 `goalesce` is largely configured using a YAML configuration file. Check out the GoDoc for [`Config`](https://pkg.go.dev/github.com/joeriddles/goalesce/pkg/config#Config) for more detail.
 

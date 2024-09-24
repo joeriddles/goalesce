@@ -3,42 +3,40 @@ package {{.package}}
 
 import (
 	"context"
-
-  "github.com/labstack/echo/v4"
-
-  query "{{.queryPackage}}"
-  {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
+	"github.com/labstack/echo/v4"
+	query "{{.queryPackage}}"
+	{{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 
 type Server struct {
-  {{range .metadatas}}{{.Name}}Controller
-  {{end}}
+	{{range .metadatas}}{{.Name}}Controller
+	{{end}}
 }
 
 func NewServer(query *query.Query) *Server {
 	return &Server{
-    {{range .metadatas}}{{.Name}}Controller: New{{.Name}}Controller(query),
-    {{end}}
-  }
+		{{range .metadatas}}{{.Name}}Controller: New{{.Name}}Controller(query),
+		{{end}}
+	}
 }
 
 {{range .metadatas}}func (s *Server) Get{{.Name}}(ctx echo.Context, request {{Types}}Get{{.Name}}RequestObject) ({{Types}}Get{{.Name}}ResponseObject, error) {
-  return s.{{.Name}}Controller.Get{{.Name}}(ctx, request)
+	return s.{{.Name}}Controller.Get{{.Name}}(ctx, request)
 }
 
 func (s *Server) Post{{.Name}}(ctx echo.Context, request {{Types}}Post{{.Name}}RequestObject) ({{Types}}Post{{.Name}}ResponseObject, error) {
-  return s.{{.Name}}Controller.Post{{.Name}}(ctx, request)
+	return s.{{.Name}}Controller.Post{{.Name}}(ctx, request)
 }
 
 func (s *Server) Delete{{.Name}}ID(ctx echo.Context, request {{Types}}Delete{{.Name}}IDRequestObject) ({{Types}}Delete{{.Name}}IDResponseObject, error) {
-  return s.{{.Name}}Controller.Delete{{.Name}}ID(ctx, request)
+	return s.{{.Name}}Controller.Delete{{.Name}}ID(ctx, request)
 }
 
 func (s *Server) Get{{.Name}}ID(ctx echo.Context, request {{Types}}Get{{.Name}}IDRequestObject) ({{Types}}Get{{.Name}}IDResponseObject, error) {
-  return s.{{.Name}}Controller.Get{{.Name}}ID(ctx, request)
+	return s.{{.Name}}Controller.Get{{.Name}}ID(ctx, request)
 }
 
 func (s *Server) Put{{.Name}}ID(ctx echo.Context, request {{Types}}Put{{.Name}}IDRequestObject) ({{Types}}Put{{.Name}}IDResponseObject, error) {
-  return s.{{.Name}}Controller.Put{{.Name}}ID(ctx, request)
+	return s.{{.Name}}Controller.Put{{.Name}}ID(ctx, request)
 }
 {{end}}
