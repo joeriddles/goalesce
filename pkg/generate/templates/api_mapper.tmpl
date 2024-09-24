@@ -25,9 +25,9 @@ func New{{.Name}}Mapper() {{.Name}}Mapper {
 
 func (m *{{.Name|ToCamelCase}}Mapper) Map(src model.{{.dst.Name}}) {{Types}}{{.dst.Name}} {
 	dst := &{{Types}}{{.dst.Name}}{}
-	{{range .src.AllFields}}
+	{{- range .src.AllFields}}
 	{{.|ConvertToApi}}
-	{{end}}
+	{{- end}}
 	return *dst
 }
 
