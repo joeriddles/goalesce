@@ -333,6 +333,9 @@ func (g *generator) generateOpenApiBase(metadatas []*entity.GormModelMetadata) e
 		doc.Paths.Set(fmt.Sprintf("/%v/{id}/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
 			Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1%%7Bid%%7D~1", utils.ToSnakeCase(metadata.Name)),
 		})
+		doc.Paths.Set(fmt.Sprintf("/%v/batch/", utils.ToHtmlCase(metadata.Name)), &openapi3.PathItem{
+			Ref: fmt.Sprintf("./%v.gen.yaml#/paths/~1batch~1", utils.ToSnakeCase(metadata.Name)),
+		})
 	}
 
 	if err := doc.Paths.Validate(context.Background()); err != nil {

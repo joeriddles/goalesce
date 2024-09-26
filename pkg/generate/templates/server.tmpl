@@ -38,4 +38,8 @@ func (s *Server) Get{{.Name}}ID(ctx context.Context, request {{Types}}Get{{.Name
 func (s *Server) Put{{.Name}}ID(ctx context.Context, request {{Types}}Put{{.Name}}IDRequestObject) ({{Types}}Put{{.Name}}IDResponseObject, error) {
 	return s.{{.Name}}Controller.Put{{.Name}}ID(ctx, request)
 }
+
+func (s *Server) Post{{.Name}}Batch(ctx context.Context, request Post{{.Name}}BatchRequestObject) (Post{{.Name}}BatchResponseObject, error) {
+	return s.{{.Name}}Controller.Post{{.Name}}Batch(ctx, request)
+}
 {{end}}

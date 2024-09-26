@@ -91,6 +91,38 @@ paths:
           description: Deleted
         "404":
           $ref: "#/components/responses/NotFound"
+  /batch/:
+    post:
+      tags:
+        - "{{.Name|ToSnakeCase}}"
+      summary: Batch create multiple new {{.Name}}s
+      parameters:
+        - name: clear
+          in: query
+          description: If true, clears all existing {{.Name}}s before creating new ones
+          required: false
+          schema:
+            type: boolean
+            default: false
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Create{{.Name}}'
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/{{.Name}}s'
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
 
 components:
   schemas:
@@ -117,6 +149,10 @@ components:
         {{end}}
         {{range .Embedded}}{{range .Fields}}{{if Not (IsNullable .Type)}}- {{.Name|ToSnakeCase}}{{end}}
         {{end}}{{end}}
+    {{.Name}}s:
+      type: array
+      items:
+        $ref: '#/components/schemas/{{.Name}}'
     Create{{.Name}}:
       type: object
       properties:
