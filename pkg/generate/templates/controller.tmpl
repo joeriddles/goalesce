@@ -91,7 +91,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}Batch(ctx context.Context, request {{Types}}Post{{.model.Name}}BatchRequestObject) ({{Types}}Post{{.model.Name}}BatchResponseObject, error) {
 	srcs := request.Body
 
-	apiModels := []{{.model.Name}}{}
+	apiModels := []{{Types}}{{.model.Name}}{}
 	errs := []error{}
 	for _, src := range *srcs {
 		dst := &model.{{.model.Name}}{}

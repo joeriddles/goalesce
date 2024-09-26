@@ -92,7 +92,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx echo.Co
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}Batch(ctx echo.Context, request {{Types}}Post{{.model.Name}}BatchRequestObject) ({{Types}}Post{{.model.Name}}BatchResponseObject, error) {
 	srcs := request.Body
 
-	apiModels := []{{.model.Name}}{}
+	apiModels := []{{Types}}{{.model.Name}}{}
 	errs := []error{}
 	for _, src := range *srcs {
 		dst := &model.{{.model.Name}}{}
