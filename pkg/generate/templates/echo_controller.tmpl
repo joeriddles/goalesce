@@ -62,14 +62,24 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Con
 
 	createdModel, err := c.repository.Create(ctx.Request().Context(), *dst)
 	if err != nil {
+		if err == gorm.ErrDuplicatedKey {
+			return Post{{.model.Name}}409JSONResponse{
+				ConflictJSONResponse: ConflictJSONResponse{
+					Code:    "{{.model.Name|ToSnakeCase}}/conflict",
+					Message: err.Error(),
+				},
+			}, nil
+		}
 		return nil, err
 	}
+
 	apiModel := c.apiMapper.Map(*createdModel)
 	return {{Types}}Post{{.model.Name}}201JSONResponse(apiModel), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}ID(ctx echo.Context, request {{Types}}Delete{{.model.Name}}IDRequestObject) ({{Types}}Delete{{.model.Name}}IDResponseObject, error) {
-	if err := c.repository.Delete(ctx.Request().Context(), request.ID); err != nil {
+	force := request.Params.Force != nil && *request.Params.Force
+	if err := c.repository.Delete(ctx.Request().Context(), request.ID, force); err != nil {
 		return nil, err
 	}
 	return {{Types}}Delete{{.model.Name}}ID204Response{}, nil
@@ -97,28 +107,55 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx echo.Co
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}Batch(ctx echo.Context, request {{Types}}Post{{.model.Name}}BatchRequestObject) ({{Types}}Post{{.model.Name}}BatchResponseObject, error) {
-	srcs := request.Body
+	deletedCount := new(int)
+	if (request.Params.Clear != nil && *request.Params.Clear) {
+		filters := &repository.{{.model.Name}}Filter{}
+		j, err := json.Marshal(request.Params)
+		if err != nil {
+			return {{Types}}Post{{.model.Name}}Batch400JSONResponse{}, nil
+		}
+		json.Unmarshal(j, filters)
 
-	apiModels := []{{Types}}{{.model.Name}}{}
-	errs := []error{}
+		force := request.Params.Force != nil && *request.Params.Force
+		deleted, err := c.repository.BatchDelete(ctx.Request().Context(), *filters, force)
+		if err != nil {
+			return nil, err
+		}
+		deletedCount = &deleted
+	}
+
+	srcs := request.Body
+	dsts := []model.{{.model.Name}}{}
 	for _, src := range *srcs {
 		dst := &model.{{.model.Name}}{}
-		{{range .createApi.Fields}}
+		{{- range .createApi.Fields}}
 		{{.|ConvertToModel}}{{end}}
+		dsts = append(dsts, *dst)
+	}
 
-		createdModel, err := c.repository.Create(ctx.Request().Context(), *dst)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+	err := c.repository.BatchCreate(ctx.Request().Context(), dsts)
+	if err != nil {
+		if err == gorm.ErrDuplicatedKey {
+			return Post{{.model.Name}}Batch409JSONResponse{
+				ConflictJSONResponse: ConflictJSONResponse{
+					Code:    "{{.model.Name|ToSnakeCase}}/conflict",
+					Message: err.Error(),
+				},
+			}, nil
 		}
-		
-		apiModel := c.apiMapper.Map(*createdModel)
+		return nil, err
+	}
+
+	apiModels := []{{Types}}{{.model.Name}}{}
+	for _, dst := range dsts {
+		apiModel := c.apiMapper.Map(dst)
 		apiModels = append(apiModels, apiModel)
 	}
 
-	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
-	}
-
-	return {{Types}}Post{{.model.Name}}Batch201JSONResponse(apiModels), nil
+	return {{Types}}Post{{.model.Name}}Batch201JSONResponse(
+		Batch{{.model.Name}}Response{
+			Created: apiModels,
+			DeletedCount: deletedCount,
+		},
+	), nil
 }

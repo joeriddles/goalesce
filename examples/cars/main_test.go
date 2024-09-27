@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -18,8 +19,32 @@ import (
 	"gorm.io/gorm"
 )
 
+// sqlite dialect that has better error translation than the built-in dialect.
+type sqliteDialectWithErrorTranslation struct {
+	gorm.Dialector
+}
+
+func openSqliteDialectWithErrorTranslation(dsn string) gorm.Dialector {
+	return &sqliteDialectWithErrorTranslation{
+		Dialector: sqlite.Open(dsn),
+	}
+}
+
+func (s *sqliteDialectWithErrorTranslation) Translate(err error) error {
+	// if t, ok := err.(sqlite3.Error); ok {
+	if strings.HasPrefix(err.Error(), "UNIQUE constraint failed:") {
+		return gorm.ErrDuplicatedKey
+	}
+	// }
+	return err
+}
+
 func newQuery(t *testing.T) *query.Query {
-	db, err := gorm.Open(sqlite.Open("file::memory:"), &gorm.Config{})
+
+	db, err := gorm.Open(
+		openSqliteDialectWithErrorTranslation("file::memory:"),
+		&gorm.Config{TranslateError: true},
+	)
 	require.NoError(t, err)
 	db.Exec("PRAGMA foreign_keys = ON;") // enable FK constraints
 
@@ -267,6 +292,113 @@ func Test_DeleteVehicleID(t *testing.T) {
 
 	_, err = repo.Get(ctx, int64(vehicle.ID))
 	require.Error(t, err, "Vehicle was not deleted from database")
+}
+
+func Test_PostVehicleBatch(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	query := newQuery(t)
+	controller := api.NewVehicleController(query)
+	_, vehicleModel, _, person := setupModels(t, query)
+
+	// Act
+	response, err := controller.PostVehicleBatch(ctx, api.PostVehicleBatchRequestObject{
+		Body: &[]api.CreateVehicle{
+			{
+				Vin:            "456",
+				VehicleModelID: int(vehicleModel.ID),
+				PersonID:       int(person.ID),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	// Assert
+	rec := httptest.NewRecorder()
+	err = response.VisitPostVehicleBatchResponse(rec)
+	require.NoError(t, err)
+	assert.Equal(t, 201, rec.Code)
+
+	batchResponse := new(api.BatchVehicleResponse)
+	err = json.Unmarshal(rec.Body.Bytes(), batchResponse)
+	require.NoError(t, err)
+
+	assert.Nil(t, batchResponse.DeletedCount)
+	assert.Len(t, batchResponse.Created, 1)
+
+	newVehicle := batchResponse.Created[0]
+	assert.Equal(t, "456", newVehicle.Vin)
+	assert.Equal(t, vehicleModel.ID, uint(newVehicle.VehicleModelID))
+	assert.Equal(t, person.ID, uint(newVehicle.PersonID))
+}
+
+func Test_PostVehicleBatch_UniqueConstraintViolated(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	query := newQuery(t)
+	controller := api.NewVehicleController(query)
+	_, _, vehicle, _ := setupModels(t, query)
+
+	// Act
+	response, err := controller.PostVehicleBatch(ctx, api.PostVehicleBatchRequestObject{
+		Body: &[]api.CreateVehicle{
+			{
+				Vin:            vehicle.Vin,
+				VehicleModelID: int(vehicle.VehicleModelID),
+				PersonID:       int(vehicle.PersonID),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	// Assert
+	rec := httptest.NewRecorder()
+	err = response.VisitPostVehicleBatchResponse(rec)
+	require.NoError(t, err)
+	assert.Equal(t, 409, rec.Code)
+}
+
+func Test_PostVehicleBatch_UniqueConstraintViolatedAndClear(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	query := newQuery(t)
+	controller := api.NewVehicleController(query)
+	_, _, vehicle, _ := setupModels(t, query)
+
+	// Act
+	response, err := controller.PostVehicleBatch(ctx, api.PostVehicleBatchRequestObject{
+		Params: api.PostVehicleBatchParams{
+			Clear: ptr(true),
+			Force: ptr(true),
+			Vin:   ptr(vehicle.Vin), // delete vehicles matching this VIN
+		},
+		Body: &[]api.CreateVehicle{
+			{
+				Vin:            vehicle.Vin,
+				VehicleModelID: int(vehicle.VehicleModelID),
+				PersonID:       int(vehicle.PersonID),
+			},
+		},
+	})
+	require.NoError(t, err)
+
+	// Assert
+	rec := httptest.NewRecorder()
+	err = response.VisitPostVehicleBatchResponse(rec)
+	require.NoError(t, err)
+	assert.Equal(t, 201, rec.Code)
+
+	batchResponse := new(api.BatchVehicleResponse)
+	err = json.Unmarshal(rec.Body.Bytes(), batchResponse)
+	require.NoError(t, err)
+
+	assert.Equal(t, 1, *batchResponse.DeletedCount)
+	assert.Len(t, batchResponse.Created, 1)
+
+	newVehicle := batchResponse.Created[0]
+	assert.Equal(t, vehicle.Vin, newVehicle.Vin)
+	assert.Equal(t, vehicle.VehicleModelID, uint(newVehicle.VehicleModelID))
+	assert.Equal(t, vehicle.PersonID, uint(newVehicle.PersonID))
 }
 
 func Test_PostVehicleForSale(t *testing.T) {

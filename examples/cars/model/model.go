@@ -26,7 +26,7 @@ type VehicleModel struct {
 // An individual of a model, like Joe's Chevrolet Silverado
 type Vehicle struct {
 	gorm.Model
-	Vin            string
+	Vin            string `gorm:"uniqueIndex"`
 	VehicleModelID uint
 	VehicleModel   VehicleModel
 	PersonID       uint

@@ -29,6 +29,11 @@ type {{.model.Name}}Repository interface {
 		ctx context.Context,
 		{{.model.Name|ToCamelCase}} model.{{.model.Name}},
 	) (*model.{{.model.Name}}, error)
+
+	BatchCreate(
+		ctx context.Context,
+		{{.model.Name|ToCamelCase}}s []model.{{.model.Name}},
+	) error
 	
 	Update(
 		ctx context.Context,
@@ -39,7 +44,14 @@ type {{.model.Name}}Repository interface {
 	Delete(
 		ctx context.Context,
 		id int64,
+		force bool,
 	) error
+
+	BatchDelete(
+		ctx context.Context,
+		filters {{.model.Name}}Filter,
+		force bool,
+) (int, error)
 }
 
 type {{.model.Name|ToCamelCase}}Repository struct {
@@ -58,16 +70,7 @@ func (r *{{.model.Name|ToCamelCase}}Repository) List(
 ) ([]*model.{{.model.Name}}, error) {
 	conds := []gen.Condition{}
 	if filters != nil {
-		{{range .model.Fields -}}
-		{{- with  .|ToOpenApiType}}{{if not .IsSimpleType}}{{continue}}{{end}}{{end -}}
-		if filters.{{.Name}} != nil {
-			{{if eq .Type "bool" -}}
-			conds = append(conds, r.query.{{.Parent.Name}}.{{.Name}}.Is(*filters.{{.Name}}))
-			{{- else -}}
-			conds = append(conds, r.query.{{.Parent.Name}}.{{.Name}}.Eq(*filters.{{.Name}}))
-			{{- end}}
-		}
-		{{end -}}
+		conds = r.createFilterConditions(*filters)
 	}
 	return r.query.{{.model.Name}}.Where(conds...).Find()
 }
@@ -87,6 +90,21 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Create(
 	return &{{.model.Name|ToCamelCase}}, err
 }
 
+func (r *{{.model.Name|ToCamelCase}}Repository) BatchCreate(
+	ctx context.Context,
+	{{.model.Name|ToCamelCase}}s []model.{{.model.Name}},
+) error {
+	return r.query.Transaction(func(tx *query.Query) error {
+		for _, {{.model.Name|ToCamelCase}} := range {{.model.Name|ToCamelCase}}s {
+			err := tx.{{.model.Name}}.Create(&{{.model.Name|ToCamelCase}})
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
 func (r *{{.model.Name|ToCamelCase}}Repository) Update(
 	ctx context.Context,
 	id int64,
@@ -104,9 +122,47 @@ func (r *{{.model.Name|ToCamelCase}}Repository) Update(
 func (r *{{.model.Name|ToCamelCase}}Repository) Delete(
 	ctx context.Context,
 	id int64,
+	force bool,
 ) error {
-	_, err := r.query.{{.model.Name}}.
-		Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}})).
-		Delete()
+	q := r.query.{{.model.Name}}.
+		Where(r.query.{{.model.Name}}.ID.Eq({{.model|WrapID}}))
+	if force {
+		q = q.Unscoped()
+	}
+	_, err := q.Delete()
 	return err
+}
+
+func (r *{{.model.Name|ToCamelCase}}Repository) BatchDelete(
+	ctx context.Context,
+	filters {{.model.Name}}Filter,
+	force bool,
+) (int, error) {
+	conds := r.createFilterConditions(filters)
+	q := r.query.{{.model.Name}}.Where(conds...)
+
+	if force {
+		q = q.Unscoped()
+	}
+
+	res, err := q.Delete()
+	if err != nil {
+		return 0, err
+	}
+	return int(res.RowsAffected), nil
+}
+
+func (r *{{.model.Name|ToCamelCase}}Repository) createFilterConditions(filters {{.model.Name}}Filter) []gen.Condition {
+	conds := []gen.Condition{}
+	{{range .model.Fields -}}
+	{{- with  .|ToOpenApiType}}{{if not .IsSimpleType}}{{continue}}{{end}}{{end -}}
+	if filters.{{.Name}} != nil {
+		{{if eq .Type "bool" -}}
+		conds = append(conds, r.query.{{.Parent.Name}}.{{.Name}}.Is(*filters.{{.Name}}))
+		{{- else -}}
+		conds = append(conds, r.query.{{.Parent.Name}}.{{.Name}}.Eq(*filters.{{.Name}}))
+		{{- end}}
+	}
+	{{end -}}
+	return conds
 }

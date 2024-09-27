@@ -38,6 +38,11 @@ func TestParse_Basic(t *testing.T) {
 				Type: "string",
 				Tag:  "gorm:\"column:name;\"",
 			},
+			{
+				Name: "IsActive",
+				Type: "bool",
+				Tag:  "gorm:\"column:is_active;\"",
+			},
 		},
 		Embedded: []*entity.GormModelMetadata{
 			{

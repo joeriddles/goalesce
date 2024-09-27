@@ -98,6 +98,13 @@ paths:
           required: true
           schema:
             $ref: "#/components/schemas/id"
+        - name: force
+          in: query
+          description: If true, force deletes instead of soft deleting.
+          required: false
+          schema:
+            type: boolean
+            default: false
       responses:
         "204":
           description: Deleted
@@ -116,6 +123,22 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: force
+          in: query
+          description: If true, force deletes instead of soft deleting.
+          required: false
+          schema:
+            type: boolean
+            default: false
+        {{range .Fields -}}
+        {{/* Filters to match what objects to clear */}}
+        {{- with  .|ToOpenApiType}}{{if not .IsSimpleType}}{{continue}}{{end}}{{end -}}
+        - name: {{.Name|ToSnakeCase}}
+          in: query
+          required: false
+          schema:
+            type: {{with  .|ToOpenApiType}}{{.Type}}{{end}}
+        {{end}}
       requestBody:
         required: true
         content:
@@ -130,7 +153,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/{{.Name}}s'
+                $ref: '#/components/schemas/Batch{{.Name}}Response'
         "400":
           $ref: "#/components/responses/BadRequest"
         "409":
@@ -219,6 +242,16 @@ components:
       required:
         - code
         - message
+    Batch{{.Name}}Response:
+      type: object
+      properties:
+        created:
+          $ref: '#/components/schemas/{{.Name}}s'
+        deleted_count:
+          type: integer
+          description: The number of {{.Name}}s deleted, if clear was true
+      required:
+        - created
   parameters:
     IdPath:
       name: id

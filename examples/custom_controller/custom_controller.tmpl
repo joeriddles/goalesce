@@ -2,126 +2,163 @@
 package {{.package}}
 
 import (
-  "context"
+	"context"
   "fmt"
-
-  repository "{{.repositoryImportPath}}"
-  query "{{.queryPackage}}"
-  {{if .typesPackage}}types "{{.typesPackage}}"{{end}}
+  
+	repository "{{.repositoryImportPath}}"
+	query "{{.queryPackage}}"
+	{{if .typesPackage}}types "{{.typesPackage}}"{{end}}
 )
 
 type {{.model.Name}}Controller interface {
-  Get{{.model.Name}}(ctx context.Context, request {{Types}}Get{{.model.Name}}RequestObject) ({{Types}}Get{{.model.Name}}ResponseObject, error)
-  Post{{.model.Name}}(ctx context.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error)
-  Delete{{.model.Name}}ID(ctx context.Context, request {{Types}}Delete{{.model.Name}}IDRequestObject) ({{Types}}Delete{{.model.Name}}IDResponseObject, error)
-  Get{{.model.Name}}ID(ctx context.Context, request {{Types}}Get{{.model.Name}}IDRequestObject) ({{Types}}Get{{.model.Name}}IDResponseObject, error)
-  Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error)
-  Post{{.model.Name}}Batch(ctx context.Context, request {{Types}}Post{{.model.Name}}BatchRequestObject) ({{Types}}Post{{.model.Name}}BatchResponseObject, error)
+	Get{{.model.Name}}(ctx context.Context, request {{Types}}Get{{.model.Name}}RequestObject) ({{Types}}Get{{.model.Name}}ResponseObject, error)
+	Post{{.model.Name}}(ctx context.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error)
+	Delete{{.model.Name}}ID(ctx context.Context, request {{Types}}Delete{{.model.Name}}IDRequestObject) ({{Types}}Delete{{.model.Name}}IDResponseObject, error)
+	Get{{.model.Name}}ID(ctx context.Context, request {{Types}}Get{{.model.Name}}IDRequestObject) ({{Types}}Get{{.model.Name}}IDResponseObject, error)
+	Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error)
+	Post{{.model.Name}}Batch(ctx context.Context, request {{Types}}Post{{.model.Name}}BatchRequestObject) ({{Types}}Post{{.model.Name}}BatchResponseObject, error)
 }
 
 type {{.model.Name|ToCamelCase}}Controller struct {
-  repository repository.{{.model.Name}}Repository
-  mapper {{.model.Name}}Mapper
-  apiMapper {{.model.Name}}ApiMapper
+	repository repository.{{.model.Name}}Repository
+	mapper {{.model.Name}}Mapper
+	apiMapper {{.model.Name}}ApiMapper
 }
 
 func New{{.model.Name}}Controller(query *query.Query) {{.model.Name}}Controller {
   fmt.Println("THIS IS SO CUSTOM!")
 
-  return &{{.model.Name|ToCamelCase}}Controller{
-    repository: repository.New{{.model.Name}}Repository(query),
-    mapper: New{{.model.Name}}Mapper(),
-    apiMapper: New{{.model.Name}}ApiMapper(),
-  }
+	return &{{.model.Name|ToCamelCase}}Controller{
+		repository: repository.New{{.model.Name}}Repository(query),
+		mapper: New{{.model.Name}}Mapper(),
+		apiMapper: New{{.model.Name}}ApiMapper(),
+	}
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx context.Context, request {{Types}}Get{{.model.Name}}RequestObject) ({{Types}}Get{{.model.Name}}ResponseObject, error) {
-  filters := &repository.{{.model.Name}}Filter{}
+	filters := &repository.{{.model.Name}}Filter{}
 	j, err := json.Marshal(request.Params)
 	if err != nil {
 		return {{Types}}Get{{.model.Name}}400JSONResponse{}, nil
 	}
 	json.Unmarshal(j, filters)
 
-  {{.model.Name|ToCamelCase}}s, err := c.repository.List(ctx, filters)
-  if err != nil {
-    return nil, err
-  }
+	{{.model.Name|ToCamelCase}}s, err := c.repository.List(ctx, filters)
+	if err != nil {
+		return nil, err
+	}
 
-  result := []{{Types}}{{.model.Name}}{}
-  for _, {{.model.Name|ToCamelCase}} := range {{.model.Name|ToCamelCase}}s {
-    api{{.model.Name}} := c.apiMapper.Map(*{{.model.Name|ToCamelCase}})
-    result = append(result, api{{.model.Name}})
-  }
+	result := []{{Types}}{{.model.Name}}{}
+	for _, {{.model.Name|ToCamelCase}} := range {{.model.Name|ToCamelCase}}s {
+		api{{.model.Name}} := c.apiMapper.Map(*{{.model.Name|ToCamelCase}})
+		result = append(result, api{{.model.Name}})
+	}
 
-  return {{Types}}Get{{.model.Name}}200JSONResponse(result), nil
+	return {{Types}}Get{{.model.Name}}200JSONResponse(result), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx context.Context, request {{Types}}Post{{.model.Name}}RequestObject) ({{Types}}Post{{.model.Name}}ResponseObject, error) {
 	src := request.Body
-  dst := &model.{{.model.Name}}{}
-  {{range .createApi.Fields}}
-  {{.|ConvertToModel}}{{end}}
+	dst := &model.{{.model.Name}}{}
+	{{range .createApi.Fields}}
+	{{.|ConvertToModel}}{{end}}
 
-  createdModel, err := c.repository.Create(ctx, *dst)
+	createdModel, err := c.repository.Create(ctx, *dst)
 	if err != nil {
+		if err == gorm.ErrDuplicatedKey {
+			return Post{{.model.Name}}409JSONResponse{
+				ConflictJSONResponse: ConflictJSONResponse{
+					Code:    "{{.model.Name|ToSnakeCase}}/conflict",
+					Message: err.Error(),
+				},
+			}, nil
+		}
 		return nil, err
 	}
+
 	apiModel := c.apiMapper.Map(*createdModel)
-  return {{Types}}Post{{.model.Name}}201JSONResponse(apiModel), nil
+	return {{Types}}Post{{.model.Name}}201JSONResponse(apiModel), nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Delete{{.model.Name}}ID(ctx context.Context, request {{Types}}Delete{{.model.Name}}IDRequestObject) ({{Types}}Delete{{.model.Name}}IDResponseObject, error) {
-  if err := c.repository.Delete(ctx, request.ID); err != nil {
-    return nil, err
-  }
-  return {{Types}}Delete{{.model.Name}}ID204Response{}, nil
+	force := request.Params.Force != nil && *request.Params.Force
+	if err := c.repository.Delete(ctx, request.ID, force); err != nil {
+		return nil, err
+	}
+	return {{Types}}Delete{{.model.Name}}ID204Response{}, nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}ID(ctx context.Context, request {{Types}}Get{{.model.Name}}IDRequestObject) ({{Types}}Get{{.model.Name}}IDResponseObject, error) {
-  model, err := c.repository.Get(ctx, request.ID)
-  if err != nil {
-    return nil, err
-  }
-  apiModel := c.apiMapper.Map(*model)
-  return {{Types}}Get{{.model.Name}}ID200JSONResponse(apiModel), err
+	model, err := c.repository.Get(ctx, request.ID)
+	if err != nil {
+		return nil, err
+	}
+	apiModel := c.apiMapper.Map(*model)
+	return {{Types}}Get{{.model.Name}}ID200JSONResponse(apiModel), err
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Put{{.model.Name}}ID(ctx context.Context, request {{Types}}Put{{.model.Name}}IDRequestObject) ({{Types}}Put{{.model.Name}}IDResponseObject, error) {
 	src := request.Body
-  dst := &model.{{.model.Name}}{}
-  {{range .createApi.Fields}}
-  {{.|ConvertToModel}}{{end}}
+	dst := &model.{{.model.Name}}{}
+	{{range .updateApi.Fields}}
+	{{.|ConvertToModel}}{{end}}
 
-  if _, err := c.repository.Update(ctx, request.ID, *dst); err != nil {
-    return nil, err
-  }
-  return {{Types}}Put{{.model.Name}}ID204Response{}, nil
+	if _, err := c.repository.Update(ctx, request.ID, *dst); err != nil {
+		return nil, err
+	}
+	return {{Types}}Put{{.model.Name}}ID204Response{}, nil
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}Batch(ctx context.Context, request {{Types}}Post{{.model.Name}}BatchRequestObject) ({{Types}}Post{{.model.Name}}BatchResponseObject, error) {
-	srcs := request.Body
+	deletedCount := new(int)
+	if (request.Params.Clear != nil && *request.Params.Clear) {
+		filters := &repository.{{.model.Name}}Filter{}
+		j, err := json.Marshal(request.Params)
+		if err != nil {
+			return {{Types}}Post{{.model.Name}}Batch400JSONResponse{}, nil
+		}
+		json.Unmarshal(j, filters)
 
-	apiModels := []{{.model.Name}}{}
-	errs := []error{}
+		force := request.Params.Force != nil && *request.Params.Force
+		deleted, err := c.repository.BatchDelete(ctx, *filters, force)
+		if err != nil {
+			return nil, err
+		}
+		deletedCount = &deleted
+	}
+
+	srcs := request.Body
+	dsts := []model.{{.model.Name}}{}
 	for _, src := range *srcs {
 		dst := &model.{{.model.Name}}{}
-		{{range .createApi.Fields}}
+		{{- range .createApi.Fields}}
 		{{.|ConvertToModel}}{{end}}
+		dsts = append(dsts, *dst)
+	}
 
-		createdModel, err := c.repository.Create(ctx, *dst)
-		if err != nil {
-			errs = append(errs, err)
-			continue
+	err := c.repository.BatchCreate(ctx, dsts)
+	if err != nil {
+		if err == gorm.ErrDuplicatedKey {
+			return Post{{.model.Name}}Batch409JSONResponse{
+				ConflictJSONResponse: ConflictJSONResponse{
+					Code:    "{{.model.Name|ToSnakeCase}}/conflict",
+					Message: err.Error(),
+				},
+			}, nil
 		}
-		
-		apiModel := c.apiMapper.Map(*createdModel)
+		return nil, err
+	}
+
+	apiModels := []{{Types}}{{.model.Name}}{}
+	for _, dst := range dsts {
+		apiModel := c.apiMapper.Map(dst)
 		apiModels = append(apiModels, apiModel)
 	}
 
-	if len(errs) > 0 {
-		return nil, errors.Join(errs...)
-	}
-
-	return {{Types}}Post{{.model.Name}}Batch201JSONResponse(apiModels), nil
+	return {{Types}}Post{{.model.Name}}Batch201JSONResponse(
+		Batch{{.model.Name}}Response{
+			Created: apiModels,
+			DeletedCount: deletedCount,
+		},
+	), nil
 }
