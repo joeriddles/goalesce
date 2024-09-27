@@ -7,10 +7,17 @@ import (
 	query "{{.queryPkg}}"
 )
 
+type {{.model.Name}}Filter struct {
+	{{range .model.Fields -}}
+	{{- with  .|ToOpenApiType}}{{if not .IsSimpleType}}{{continue}}{{end}}{{end -}}
+	{{.Name}} {{.|GetGormQueryType|ToPtr}} `json:"{{.Name|ToSnakeCase}},omitempty"`
+	{{end}}
+}
+
 type {{.model.Name}}Repository interface {
 	List(
 		ctx context.Context,
-		filters any,
+		filters *{{.model.Name}}Filter,
 	) ([]*model.{{.model.Name}}, error)
 
 	Get(
@@ -47,9 +54,18 @@ func New{{.model.Name}}Repository(query *query.Query) {{.model.Name}}Repository 
 
 func (r *{{.model.Name|ToCamelCase}}Repository) List(
 	ctx context.Context,
-	filters any,
+	filters *{{.model.Name}}Filter,
 ) ([]*model.{{.model.Name}}, error) {
-	return r.query.{{.model.Name}}.Find()
+	conds := []gen.Condition{}
+	if filters != nil {
+		{{range .model.Fields -}}
+		{{- with  .|ToOpenApiType}}{{if not .IsSimpleType}}{{continue}}{{end}}{{end -}}
+		if filters.{{.Name}} != nil {
+			conds = append(conds, r.query.{{.Parent.Name}}.{{.Name}}.Eq(*filters.{{.Name}}))
+		}
+		{{end -}}
+	}
+	return r.query.{{.model.Name}}.Where(conds...).Find()
 }
 
 func (r *{{.model.Name|ToCamelCase}}Repository) Get(

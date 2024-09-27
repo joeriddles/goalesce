@@ -137,6 +137,51 @@ func Test_GetVehicle(t *testing.T) {
 	assert.NotEqual(t, 0, actualVehicle.ID)
 }
 
+func Test_GetVehicle_WithFilters(t *testing.T) {
+	// Arrange
+	ctx := context.Background()
+	query := newQuery(t)
+	controller := api.NewVehicleController(query)
+
+	_, _, vehicle, _ := setupModels(t, query)
+
+	vehicleModelId := int(vehicle.VehicleModelID)
+	personId := int(vehicle.PersonID)
+
+	// Act
+	testCases := []struct {
+		name     string
+		params   api.GetVehicleParams
+		expected int
+	}{
+		{"Vin", api.GetVehicleParams{Vin: &vehicle.Vin}, 1},
+		{"VehicleModelID", api.GetVehicleParams{VehicleModelID: &vehicleModelId}, 1},
+		{"PersonID", api.GetVehicleParams{PersonID: &personId}, 1},
+		{"Wrong Vin", api.GetVehicleParams{Vin: ptr("nope")}, 0},
+		{"Wrong VehicleModelId", api.GetVehicleParams{VehicleModelID: ptr(vehicleModelId + 1)}, 0},
+		{"Wrong PersonID", api.GetVehicleParams{PersonID: ptr(personId + 1)}, 0},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			response, err := controller.GetVehicle(ctx, api.GetVehicleRequestObject{
+				Params: tc.params,
+			})
+			require.NoError(t, err)
+
+			// Assert
+			rec := httptest.NewRecorder()
+			err = response.VisitGetVehicleResponse(rec)
+			require.NoError(t, err)
+			assert.Equal(t, 200, rec.Code)
+
+			vehicles := &[]api.Vehicle{}
+			err = json.Unmarshal(rec.Body.Bytes(), vehicles)
+			require.NoError(t, err)
+			assert.Equal(t, tc.expected, len(*vehicles))
+		})
+	}
+}
+
 func Test_GetVehicleID(t *testing.T) {
 	// Arrange
 	ctx := context.Background()
@@ -263,4 +308,8 @@ func Test_PostVehicleForSale(t *testing.T) {
 	assert.Equal(t, vehicleID, int(vehicleForSaleFromDb.VehicleID))
 	assert.Equal(t, time.Duration(60), vehicleForSaleFromDb.Duration)
 	assert.True(t, vehicleForSaleFromDb.Amount.Equal(decimal.NewFromFloat(100.00)))
+}
+
+func ptr[T any](val T) *T {
+	return &val
 }

@@ -32,7 +32,14 @@ func New{{.model.Name}}Controller(query *query.Query) {{.model.Name}}Controller 
 }
 
 func (c *{{.model.Name|ToCamelCase}}Controller) Get{{.model.Name}}(ctx context.Context, request {{Types}}Get{{.model.Name}}RequestObject) ({{Types}}Get{{.model.Name}}ResponseObject, error) {
-	{{.model.Name|ToCamelCase}}s, err := c.repository.List(ctx, map[string]interface{}{})
+	filters := &repository.{{.model.Name}}Filter{}
+	j, err := json.Marshal(request.Params)
+	if err != nil {
+		return {{Types}}Get{{.model.Name}}400JSONResponse{}, nil
+	}
+	json.Unmarshal(j, filters)
+
+	{{.model.Name|ToCamelCase}}s, err := c.repository.List(ctx, filters)
 	if err != nil {
 		return nil, err
 	}

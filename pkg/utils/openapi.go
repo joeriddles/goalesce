@@ -14,6 +14,10 @@ type OpenApiType struct {
 	Nullable bool
 }
 
+func (o *OpenApiType) IsSimpleType() bool {
+	return o.Ref == nil && o.Items == nil
+}
+
 // TODO(joeriddles): Refactor this monstrosity
 func ToOpenApiType(typ string) *OpenApiType {
 	if isPointer := strings.HasPrefix(typ, "*"); isPointer {

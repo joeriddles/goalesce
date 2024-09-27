@@ -2,6 +2,7 @@ package entity
 
 import (
 	"go/types"
+	"strings"
 
 	"github.com/joeriddles/goalesce/pkg/utils"
 )
@@ -71,4 +72,15 @@ func (f *GormModelField) WithType(t types.Type, moduleName string) {
 
 func (f *GormModelField) GetType() types.Type {
 	return f.t
+}
+
+// Get the type for use in a Go type declaration
+//
+// Example: github.com/shopspring/decimal.Decimal -> decimal.Decimal
+func (f *GormModelField) GetGoType() string {
+	if strings.Contains(f.Type, "/") {
+		split := strings.Split(f.Type, "/")
+		return split[len(split)-1]
+	}
+	return f.Type
 }

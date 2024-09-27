@@ -31,7 +31,7 @@ func TestToPascalCase(t *testing.T) {
 	assert.Equal(t, "HelloWorld", ToPascalCase("HelloWorld"))
 }
 
-func TestStripModulePacakge(t *testing.T) {
+func TestStripModulePackage(t *testing.T) {
 	assert.Equal(t, "User", StripModulePackage(`github.com/joeriddles/goalesce/pkg/model.User`, `github.com/joeriddles/goalesce`))
 	assert.Equal(t, "User", StripModulePackage(`command-line-arguments.User`, `command-line-arguments`))
 

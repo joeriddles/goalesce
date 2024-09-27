@@ -20,6 +20,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/joeriddles/goalesce/pkg/config"
+	"github.com/joeriddles/goalesce/pkg/convert"
 	"github.com/joeriddles/goalesce/pkg/entity"
 	"github.com/joeriddles/goalesce/pkg/parse"
 	"github.com/joeriddles/goalesce/pkg/utils"
@@ -178,7 +179,20 @@ func (g *generator) Generate(metadatas []*entity.GormModelMetadata) error {
 		if err := g.generateRepository(metadata); err != nil {
 			return err
 		}
-		if err := g.generateController(metadata, createApiMetadata, updateApiMetadata); err != nil {
+
+		getFilterStr := fmt.Sprintf("Get%vParams", metadata.Name)
+		getFilterMetadata, _ := utils.First(apiMetadatas, func(m *entity.GormModelMetadata) bool {
+			return m.Name == getFilterStr
+		})
+
+		for _, filterField := range getFilterMetadata.Fields {
+			modelField, _ := utils.First(metadata.Fields, func(f *entity.GormModelField) bool {
+				return f.Name == filterField.Name
+			})
+			filterField.MapFunc = modelField.MapFunc
+			filterField.MapApiFunc = modelField.MapApiFunc
+		}
+		if err := g.generateController(metadata, createApiMetadata, updateApiMetadata, getFilterMetadata); err != nil {
 			return err
 		}
 	}
@@ -373,8 +387,16 @@ func (g *generator) generateController(
 	metadata *entity.GormModelMetadata,
 	createApiMetadata *entity.GormModelMetadata,
 	updateApiMetadata *entity.GormModelMetadata,
+	filterMetadata *entity.GormModelMetadata,
 ) error {
 	fp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_controller.gen.go", utils.ToSnakeCase(metadata.Name)))
+
+	convertToFilter := func(field *entity.GormModelField) string {
+		return convert.ConvertFieldNamed(g.templates, field, metadata, "request.Params", "filters")
+	}
+	g.templates.Funcs(template.FuncMap{
+		"ConvertToFilter": convertToFilter,
+	})
 
 	template := "controller.tmpl"
 	if g.cfg.ServerCodegen.Generate.EchoServer {
@@ -392,6 +414,7 @@ func (g *generator) generateController(
 			"model":                metadata,
 			"createApi":            createApiMetadata,
 			"updateApi":            updateApiMetadata,
+			"filterMetadata":       filterMetadata,
 		},
 	)
 }
@@ -438,10 +461,10 @@ func (g *generator) generateMapper(
 	apiFp := filepath.Join(g.cfg.OutputFile, "api", fmt.Sprintf("%v_api_mapper.gen.go", utils.ToSnakeCase(metadata.Name)))
 
 	convertToModel := func(field *entity.GormModelField) string {
-		return convertField(g.templates, field, metadata)
+		return convert.ConvertField(g.templates, field, metadata)
 	}
 	convertToApi := func(field *entity.GormModelField) string {
-		return convertField(g.templates, field, apiMetadata)
+		return convert.ConvertField(g.templates, field, apiMetadata)
 	}
 	g.templates.Funcs(template.FuncMap{
 		"ConvertToModel": convertToModel,
@@ -534,9 +557,10 @@ func (g *generator) generateGo(fp string, template string, data any) error {
 	}
 
 	// Format code and fix missing imports
-	code := b.Bytes()
-	code, err = imports.Process(fp, code, &imports.Options{})
+	unformattedCode := b.Bytes()
+	code, err := imports.Process(fp, unformattedCode, &imports.Options{})
 	if err != nil {
+		fmt.Printf("Failed to format code:\n%v", string(unformattedCode))
 		return err
 	}
 
@@ -587,10 +611,13 @@ func (g *generator) loadTemplates(src embed.FS, t *template.Template) error {
 		"Types":              getTypesNamespace,
 		"WrapID":             wrapID,
 		"ShouldCreateField":  shouldCreateField,
+		"GetGormQueryType":   getGormQueryType,
+		"ToPtr":              toPtr,
 		// will be replaced per model
 		"ConvertToModel":           func() string { return "" },
 		"ConvertToApi":             func() string { return "" },
 		"ConvertToModelFromCreate": func() string { return "" },
+		"ConvertToFilter":          func() string { return "" },
 	}
 
 	err := fs.WalkDir(src, "templates", func(path string, d fs.DirEntry, err error) error {
@@ -764,137 +791,19 @@ func wrapID(model *entity.GormModelMetadata) string {
 	return result
 }
 
-// Convert the field be converted to matching field on dst
-func convertField(
-	templates *template.Template,
-	field *entity.GormModelField,
-	dst *entity.GormModelMetadata,
-) string {
-	from := "src"
-	to := "dst"
-
-	dstField := dst.GetField(field.Name)
-
-	if field.MapApiFunc != nil {
-		return fmt.Sprintf("%v.%v = model.%v(%v.%v)", to, dstField.Name, *field.MapApiFunc, from, field.Name)
+func getGormQueryType(field *entity.GormModelField) string {
+	t := field.GetGoType()
+	if t == "time.Duration" {
+		t = "int64"
 	}
+	return t
+}
 
-	srcType := field.GetType()
-	dstType := dstField.GetType()
-
-	isSrcPtr := false
-	if ptrSrc, ok := srcType.(*types.Pointer); ok {
-		isSrcPtr = true
-		srcType = ptrSrc.Elem()
+func toPtr(t string) string {
+	if !strings.HasPrefix(t, "*") {
+		t = "*" + t
 	}
-
-	isDstPtr := false
-	if ptrDst, ok := dstType.(*types.Pointer); ok {
-		isDstPtr = true
-		dstType = ptrDst.Elem()
-	}
-
-	switch s := srcType.(type) {
-	case *types.Basic:
-		switch d := dstType.(type) {
-		case *types.Basic:
-			if s.Kind() != d.Kind() && types.ConvertibleTo(s, d) {
-				if isSrcPtr && isDstPtr {
-					var b bytes.Buffer
-					w := bufio.NewWriter(&b)
-					if err := templates.ExecuteTemplate(w, "mapper_ptr_to_ptr.tmpl", map[string]string{
-						"dst":      to,
-						"dstField": dstField.Name,
-						"dstType":  d.Name(),
-						"src":      from,
-						"srcField": field.Name,
-					}); err != nil {
-						return err.Error()
-					}
-					if err := w.Flush(); err != nil {
-						return err.Error()
-					}
-					return b.String()
-				}
-
-				return fmt.Sprintf("%v.%v = %v(%v.%v)", to, dstField.Name, d.Name(), from, field.Name)
-			}
-		}
-	case *types.Named:
-		switch d := dstType.(type) {
-		case *types.Named:
-			if s.Obj().Name() == "Time" && d.Obj().Name() == "DeletedAt" {
-				return fmt.Sprintf("%v.%v = convertTimeToGormDeletedAt(%v.%v)", to, dstField.Name, from, field.Name)
-			} else if d.Obj().Name() == "Time" && s.Obj().Name() == "DeletedAt" {
-				return fmt.Sprintf("%v.%v = convertGormDeletedAtToTime(%v.%v)", to, dstField.Name, from, field.Name)
-			}
-
-			// TODO(joeriddles): add field to GormModelField for references to user-defined models?
-			if utils.IsComplexType(dstField.Type) && !strings.Contains(dstField.Type, ".") {
-				isSrcPtr := strings.Contains(field.Type, "*")
-				mapperName, isDstPtr := strings.CutPrefix(dstField.Type, "*")
-				if dst.IsApi {
-					mapperName = mapperName + "Api"
-				}
-
-				if isDstPtr {
-					if !isSrcPtr {
-						from = "&" + from
-					}
-					return fmt.Sprintf(`%v.%v = New%vMapper().MapPtr(%v.%v)`, to, dstField.Name, mapperName, from, field.Name)
-				} else {
-					return fmt.Sprintf(`%v.%v = New%vMapper().Map(%v.%v)`, to, dstField.Name, mapperName, from, field.Name)
-				}
-			}
-		}
-	case *types.Slice:
-		if _, ok := dstType.(*types.Slice); ok {
-			isDstPtr := strings.HasPrefix(dstField.Type, "*")
-			var isDstElemPtr bool
-			if isDstPtr {
-				isDstElemPtr = dstField.Type[3:4] == "*"
-			} else {
-				isDstElemPtr = dstField.Type[2:3] == "*"
-			}
-
-			isSrcPtr := strings.HasPrefix(field.Type, "*")
-			var isSrcElemPtr bool
-			if isSrcPtr {
-				isSrcElemPtr = field.Type[3:4] == "*"
-			} else {
-				isSrcElemPtr = field.Type[2:3] == "*"
-			}
-
-			mapperName := strings.ReplaceAll(strings.ReplaceAll(dstField.Type, "*", ""), "[]", "")
-			if dst.IsApi {
-				mapperName = mapperName + "Api"
-			}
-
-			if dst.IsApi {
-				if isSrcPtr && isSrcElemPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				} else if isSrcPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				} else if isSrcElemPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				} else {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				}
-			} else {
-				if isDstPtr && isDstElemPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				} else if isDstPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapPtrSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				} else if isDstElemPtr {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlicePtrs(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				} else {
-					return fmt.Sprintf(`if %v.%v != nil { %v.%v = New%vMapper().MapSlice(%v.%v) }`, from, field.Name, to, dstField.Name, mapperName, from, field.Name)
-				}
-			}
-		}
-	}
-
-	return fmt.Sprintf("%v.%v = %v.%v", to, dstField.Name, from, field.Name)
+	return t
 }
 
 func not(v bool) bool {

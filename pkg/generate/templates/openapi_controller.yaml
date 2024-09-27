@@ -5,6 +5,16 @@ paths:
       tags:
         - "{{.Name|ToSnakeCase}}"
       summary: Get all {{.Name}}s
+      parameters:
+        {{range .Fields -}}
+        {{/* Can't filter on related object references */}}
+        {{- with  .|ToOpenApiType}}{{if not .IsSimpleType}}{{continue}}{{end}}{{end -}}
+        - name: {{.Name|ToSnakeCase}}
+          in: query
+          required: false
+          schema:
+            type: {{with  .|ToOpenApiType}}{{.Type}}{{end}}
+        {{end}}
       responses:
         "200":
           description: Success
@@ -14,6 +24,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/{{.Name}}'
+        "400":
+          $ref: "#/components/responses/BadRequest"
     post:
       tags:
         - "{{.Name|ToSnakeCase}}"
