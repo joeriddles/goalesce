@@ -63,8 +63,8 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}(ctx echo.Con
 	createdModel, err := c.repository.Create(ctx.Request().Context(), *dst)
 	if err != nil {
 		if err == gorm.ErrDuplicatedKey {
-			return Post{{.model.Name}}409JSONResponse{
-				ConflictJSONResponse: ConflictJSONResponse{
+			return {{Types}}Post{{.model.Name}}409JSONResponse{
+				ConflictJSONResponse: {{Types}}ConflictJSONResponse{
 					Code:    "{{.model.Name|ToSnakeCase}}/conflict",
 					Message: err.Error(),
 				},
@@ -136,8 +136,8 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}Batch(ctx ech
 	err := c.repository.BatchCreate(ctx.Request().Context(), dsts)
 	if err != nil {
 		if err == gorm.ErrDuplicatedKey {
-			return Post{{.model.Name}}Batch409JSONResponse{
-				ConflictJSONResponse: ConflictJSONResponse{
+			return {{Types}}Post{{.model.Name}}Batch409JSONResponse{
+				ConflictJSONResponse: {{Types}}ConflictJSONResponse{
 					Code:    "{{.model.Name|ToSnakeCase}}/conflict",
 					Message: err.Error(),
 				},
@@ -153,7 +153,7 @@ func (c *{{.model.Name|ToCamelCase}}Controller) Post{{.model.Name}}Batch(ctx ech
 	}
 
 	return {{Types}}Post{{.model.Name}}Batch201JSONResponse(
-		Batch{{.model.Name}}Response{
+		{{Types}}Batch{{.model.Name}}Response{
 			Created: apiModels,
 			DeletedCount: deletedCount,
 		},
