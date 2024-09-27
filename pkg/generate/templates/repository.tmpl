@@ -61,7 +61,11 @@ func (r *{{.model.Name|ToCamelCase}}Repository) List(
 		{{range .model.Fields -}}
 		{{- with  .|ToOpenApiType}}{{if not .IsSimpleType}}{{continue}}{{end}}{{end -}}
 		if filters.{{.Name}} != nil {
+			{{if eq .Type "bool" -}}
+			conds = append(conds, r.query.{{.Parent.Name}}.{{.Name}}.Is(*filters.{{.Name}}))
+			{{- else -}}
 			conds = append(conds, r.query.{{.Parent.Name}}.{{.Name}}.Eq(*filters.{{.Name}}))
+			{{- end}}
 		}
 		{{end -}}
 	}
