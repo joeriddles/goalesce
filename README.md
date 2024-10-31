@@ -13,7 +13,7 @@
 
 ## Install
 ```shell
-$ go install github.com/joeriddles/goalesce/cmd/goalesce@latest
+go install github.com/joeriddles/goalesce/cmd/goalesce@latest
 ```
 
 Goalesce requires additional tooling to work correctly. 
